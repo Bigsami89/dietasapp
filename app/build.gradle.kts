@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.dietasapp"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -53,7 +53,10 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     val roomVersion = "2.6.1"
     implementation("org.apache.poi:poi:5.4.1")
-    implementation("org.apache.poi:poi-ooxml-lite:5.4.1")
+    implementation("org.apache.poi:poi-ooxml:5.4.1") {
+        exclude(group = "stax", module = "stax-api")
+        exclude(group = "xml-apis", module = "xml-apis")
+    }
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     implementation("org.ojalgo:ojalgo:53.1.1")

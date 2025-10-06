@@ -8,18 +8,24 @@
     <fragment
         android:id="@+id/nav_home"
         android:name="com.example.dietasapp.ui.home.HomeFragment"
-        android:label="@string/menu_home"
+        android:label="@string/menu_calcular_dieta"
         tools:layout="@layout/fragment_home" />
 
     <fragment
-        android:id="@+id/nav_gallery"
-        android:name="com.example.dietasapp.ui.gallery.GalleryFragment"
-        android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
+        android:id="@+id/nav_inventory"
+        android:name="com.example.dietasapp.ui.inventory.InventoryFragment"
+        android:label="@string/menu_inventario"
+        tools:layout="@layout/fragment_inventory" />
 
     <fragment
-        android:id="@+id/nav_slideshow"
-        android:name="com.example.dietasapp.ui.slideshow.SlideshowFragment"
-        android:label="@string/menu_slideshow"
-        tools:layout="@layout/fragment_slideshow" />
+        android:id="@+id/nav_history"
+        android:name="com.example.dietasapp.ui.history.HistoryFragment"
+        android:label="@string/menu_historial"
+        tools:layout="@layout/fragment_history" />
+
+    <fragment
+        android:id="@+id/nav_settings"
+        android:name="com.example.dietasapp.ui.settings.SettingsFragment"
+        android:label="@string/menu_configuracion"
+        tools:layout="@layout/fragment_settings" />
 </navigation>

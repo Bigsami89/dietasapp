@@ -1,10 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Colores primarios azulados -->
+    <color name="primary_blue">#1976D2</color>
+    <color name="primary_blue_dark">#0D47A1</color>
+    <color name="primary_blue_light">#42A5F5</color>
+    
+    <!-- Colores secundarios -->
+    <color name="secondary_teal">#00ACC1</color>
+    <color name="secondary_teal_dark">#00838F</color>
+    <color name="secondary_teal_light">#26C6DA</color>
+    
+    <!-- Colores de acento -->
+    <color name="accent_blue">#2196F3</color>
+    <color name="accent_cyan">#00BCD4</color>
+    
+    <!-- Colores de fondo -->
+    <color name="background_light">#F5F7FA</color>
+    <color name="background_dark">#121212</color>
+    <color name="surface_light">#FFFFFF</color>
+    <color name="surface_dark">#1E1E1E</color>
+    
+    
+    <color name="text_primary_light">#212121</color>
+    <color name="text_secondary_light">#757575</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary_dark">#B0B0B0</color>
+    
+    <!-- Colores de estado -->
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FF9800</color>
+    <color name="error">#F44336</color>
+    <color name="info">#2196F3</color>
+    
+    <!-- Colores básicos -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="transparent">#00000000</color>
+    
+    <!-- Colores de card y divider -->
+    <color name="card_background_light">#FFFFFF</color>
+    <color name="card_background_dark">#2C2C2C</color>
+    <color name="divider_light">#E0E0E0</color>
+    <color name="divider_dark">#3C3C3C</color>
 </resources>
