@@ -14,7 +14,8 @@ import com.example.dietasapp.R
 import com.example.dietasapp.data.Animal
 import com.example.dietasapp.data.TipoDieta
 import com.example.dietasapp.database.BaseDeDatosJSON
-import com.example.dietasapp.databinding.DialogAnimalBinding
+import com.example.dietasapp.database.CatalogManager
+import com.example.dietasapp.databinding.DialogAnimalCompleteBinding
 import com.example.dietasapp.databinding.TabAnimalesBinding
 import com.example.dietasapp.inventory.Inventario
 import kotlinx.coroutines.launch
@@ -26,6 +27,7 @@ class AnimalesTabFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var inventario: Inventario
+    private lateinit var catalogManager: CatalogManager
     private lateinit var adapter: AnimalAdapter
 
     override fun onCreateView(
@@ -42,6 +44,7 @@ class AnimalesTabFragment : Fragment() {
 
         val baseDatos = BaseDeDatosJSON(requireContext())
         inventario = Inventario(baseDatos)
+        catalogManager = CatalogManager(requireContext())
 
         setupRecyclerView()
         cargarAnimales()
@@ -83,7 +86,33 @@ class AnimalesTabFragment : Fragment() {
     }
 
     fun showAddDialog() {
-        showAnimalDialog(null)
+        // Mostrar opciones: Catálogo o Manual
+        AlertDialog.Builder(requireContext())
+            .setTitle("Agregar Animal")
+            .setMessage("¿Cómo deseas agregar el animal?")
+            .setPositiveButton("Desde Catálogo") { _, _ ->
+                showCatalogDialog()
+            }
+            .setNegativeButton("Manual") { _, _ ->
+                showAnimalDialog(null)
+            }
+            .setNeutralButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showCatalogDialog() {
+        val catalog = catalogManager.getAnimalsCatalog()
+        val nombres = catalog.map { it.nombre }.toTypedArray()
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Seleccionar Animal del Catálogo")
+            .setItems(nombres) { _, which ->
+                val selectedAnimal = catalog[which]
+                val newAnimal = catalogManager.createAnimalFromCatalog(selectedAnimal)
+                guardarAnimal(newAnimal)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun showEditDialog(animal: Animal) {
@@ -91,7 +120,7 @@ class AnimalesTabFragment : Fragment() {
     }
 
     private fun showAnimalDialog(animal: Animal?) {
-        val dialogBinding = DialogAnimalBinding.inflate(layoutInflater)
+        val dialogBinding = DialogAnimalCompleteBinding.inflate(layoutInflater)
 
         // Configurar spinner de tipo de dieta
         val tiposDieta = TipoDieta.values().map { it.descripcion }
@@ -111,14 +140,22 @@ class AnimalesTabFragment : Fragment() {
             dialogBinding.spinnerTipoDieta.setText(it.tipo.descripcion, false)
 
             // Requerimientos mínimos
-            dialogBinding.etCPMin.setText(it.requerimientosMinimos["CP"]?.toString() ?: "")
-            dialogBinding.etNEmMin.setText(it.requerimientosMinimos["NEm"]?.toString() ?: "")
-            dialogBinding.etCaMin.setText(it.requerimientosMinimos["Ca"]?.toString() ?: "")
-            dialogBinding.etPMin.setText(it.requerimientosMinimos["P"]?.toString() ?: "")
+            it.requerimientosMinimos["CP"]?.let { v -> dialogBinding.etCPMin.setText(v.toString()) }
+            it.requerimientosMinimos["NEm"]?.let { v -> dialogBinding.etNEmMin.setText(v.toString()) }
+            it.requerimientosMinimos["TDN"]?.let { v -> dialogBinding.etTDNMin.setText(v.toString()) }
+            it.requerimientosMinimos["Ca"]?.let { v -> dialogBinding.etCaMin.setText(v.toString()) }
+            it.requerimientosMinimos["P"]?.let { v -> dialogBinding.etPMin.setText(v.toString()) }
+            it.requerimientosMinimos["NDF"]?.let { v -> dialogBinding.etNDFMin.setText(v.toString()) }
+            it.requerimientosMinimos["Fat"]?.let { v -> dialogBinding.etFatMin.setText(v.toString()) }
 
             // Requerimientos máximos
-            dialogBinding.etNDFMax.setText(it.requerimientosMaximos["NDF"]?.toString() ?: "")
-            dialogBinding.etCPMax.setText(it.requerimientosMaximos["CP"]?.toString() ?: "")
+            it.requerimientosMaximos["CP"]?.let { v -> dialogBinding.etCPMax.setText(v.toString()) }
+            it.requerimientosMaximos["NEm"]?.let { v -> dialogBinding.etNEmMax.setText(v.toString()) }
+            it.requerimientosMaximos["TDN"]?.let { v -> dialogBinding.etTDNMax.setText(v.toString()) }
+            it.requerimientosMaximos["Ca"]?.let { v -> dialogBinding.etCaMax.setText(v.toString()) }
+            it.requerimientosMaximos["P"]?.let { v -> dialogBinding.etPMax.setText(v.toString()) }
+            it.requerimientosMaximos["NDF"]?.let { v -> dialogBinding.etNDFMax.setText(v.toString()) }
+            it.requerimientosMaximos["Fat"]?.let { v -> dialogBinding.etFatMax.setText(v.toString()) }
         }
 
         val dialog = AlertDialog.Builder(requireContext())
@@ -162,13 +199,21 @@ class AnimalesTabFragment : Fragment() {
             val reqMin = mutableMapOf<String, Double>()
             dialogBinding.etCPMin.text.toString().toDoubleOrNull()?.let { reqMin["CP"] = it }
             dialogBinding.etNEmMin.text.toString().toDoubleOrNull()?.let { reqMin["NEm"] = it }
+            dialogBinding.etTDNMin.text.toString().toDoubleOrNull()?.let { reqMin["TDN"] = it }
             dialogBinding.etCaMin.text.toString().toDoubleOrNull()?.let { reqMin["Ca"] = it }
             dialogBinding.etPMin.text.toString().toDoubleOrNull()?.let { reqMin["P"] = it }
+            dialogBinding.etNDFMin.text.toString().toDoubleOrNull()?.let { reqMin["NDF"] = it }
+            dialogBinding.etFatMin.text.toString().toDoubleOrNull()?.let { reqMin["Fat"] = it }
 
             // Requerimientos máximos
             val reqMax = mutableMapOf<String, Double>()
-            dialogBinding.etNDFMax.text.toString().toDoubleOrNull()?.let { reqMax["NDF"] = it }
             dialogBinding.etCPMax.text.toString().toDoubleOrNull()?.let { reqMax["CP"] = it }
+            dialogBinding.etNEmMax.text.toString().toDoubleOrNull()?.let { reqMax["NEm"] = it }
+            dialogBinding.etTDNMax.text.toString().toDoubleOrNull()?.let { reqMax["TDN"] = it }
+            dialogBinding.etCaMax.text.toString().toDoubleOrNull()?.let { reqMax["Ca"] = it }
+            dialogBinding.etPMax.text.toString().toDoubleOrNull()?.let { reqMax["P"] = it }
+            dialogBinding.etNDFMax.text.toString().toDoubleOrNull()?.let { reqMax["NDF"] = it }
+            dialogBinding.etFatMax.text.toString().toDoubleOrNull()?.let { reqMax["Fat"] = it }
 
             val nuevoAnimal = Animal(
                 id = animal?.id ?: UUID.randomUUID().toString(),

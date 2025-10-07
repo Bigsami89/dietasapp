@@ -78,7 +78,11 @@
     <string name="stock_actualizado">Stock actualizado</string>
     <string name="sin_stock">Sin stock disponible</string>
     <string name="ultima_actualizacion">Última actualización: %s</string>
-    
+      <!-- Stock -->
+    <string name="agregar_al_stock">Agregar al Stock</string>
+    <string name="editar_stock">Editar Stock</string>
+
+
     <!-- Historial -->
     <string name="historial_titulo">Historial de Dietas</string>
     <string name="sin_historial">No hay dietas guardadas</string>
@@ -105,7 +109,7 @@
     <string name="error_exportar">Error al exportar archivo</string>
     <string name="exportacion_exitosa">Archivo exportado: %s</string>
     
-    <!-- Configuración -->
+     <!-- Configuración -->
     <string name="configuracion_titulo">Configuración</string>
     <string name="tema">Tema</string>
     <string name="tema_claro">Claro</string>
