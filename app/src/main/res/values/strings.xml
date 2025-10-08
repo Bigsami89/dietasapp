@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">OptimaDiet</string>
+    <string name="acerca_descripcion">OptimaDiet</string>
+
     
     <!-- Navigation -->
     <string name="navigation_drawer_open">Abrir menú de navegación</string>
@@ -33,108 +35,117 @@
     <string name="impacto_ambiental">Impacto Ambiental</string>
     <string name="exportar_excel">Exportar a Excel</string>
     <string name="guardar_dieta">Guardar Dieta</string>
-    <string name="dieta_guardada">Dieta guardada exitosamente</string>
-    <string name="error_calcular_dieta">Error al calcular la dieta</string>
-    <string name="sin_insumos">No hay insumos suficientes en el inventario</string>
+    
+    <!-- Selección de Ingredientes -->
+    <string name="seleccionar_ingredientes">Seleccionar Ingredientes</string>
+    <string name="seleccionar_todos">Seleccionar Todos</string>
+    <string name="deseleccionar_todos">Deseleccionar Todos</string>
+    <string name="ingredientes_seleccionados_none">Ningún ingrediente seleccionado</string>
+    <string name="ingredientes_seleccionados_count">%d ingrediente(s) seleccionado(s)</string>
+    <string name="sin_ingredientes_inventario">No hay ingredientes en el inventario.\nAgrega ingredientes desde la sección de Inventario.</string>
+    
+    <!-- Tipos de Ingredientes -->
+    <string name="forraje">Forraje</string>
+    <string name="concentrado">Concentrado</string>
+    
+    <!-- Formatos -->
+    <string name="formato_costo_por_kg">$%.2f/kg</string>
+    <string name="formato_nutrientes_principales">CP: %.1f%% • NEm: %.2f • NDF: %.1f%%</string>
+    <string name="formato_kg_dia">%.2f kg/día</string>
+    <string name="formato_porcentaje">%.1f%%</string>
+    <string name="formato_costo_total">$%.2f/día</string>
+    
+    <!-- Mensajes de Error -->
+    <string name="error_seleccionar_animal">Por favor selecciona un animal</string>
+    <string name="error_seleccionar_ingredientes">Por favor selecciona al menos un ingrediente</string>
+    <string name="error_calcular_dieta">No se pudo calcular la dieta óptima</string>
+    <string name="error_exportar">Error al exportar</string>
+    <string name="error_guardar_dieta">Error al guardar la dieta</string>
+    <string name="error_cargar_datos">Error al cargar Datos</string>
+    <string name="error_campos_vacios">Hay campos vacios</string>
+    <string name="error_guardar">Error al guardar</string>
+    <string name="error_eliminar">Error al eliminar</string>
+
+    
+    <!-- Mensajes de Éxito -->
+    <string name="exportacion_exitosa">Dieta exportada exitosamente a: %s</string>
+    <string name="dieta_guardada_exitosamente">Dieta guardada exitosamente</string>
+    <string name="animal_guardado">Animal guardado exitosamente</string>
+    <string name="insumo_eliminado">Insumo guardado exitosamente</string>
+    <!-- Resultados -->
+    <string name="costo_total">Costo total: $%s/día</string>
+    <string name="costo_por_kg">Costo por kg MS: $%s/kg</string>
+    <string name="metano_producido">Metano producido: %s g/día</string>
+    <string name="metano_por_kg_dmi">Metano por kg DMI: %s g/kg</string>
     
     <!-- Inventario -->
-    <string name="inventario_titulo">Gestión de Inventario</string>
+    <string name="inventario_titulo">Inventario</string>
     <string name="tab_animales">Animales</string>
     <string name="tab_insumos">Insumos</string>
     <string name="tab_stock">Stock</string>
-    
-    <!-- Animales -->
+    <string name="stock_actualizado">Stock actualizado</string>
     <string name="agregar_animal">Agregar Animal</string>
-    <string name="editar_animal">Editar Animal</string>
+    <string name="agregar_insumo">Agregar Insumo</string>
+    <string name="agregar_stock">Agregar Stock</string>
+    <string name="sin_insumos">No hay insumos en el inventario</string>
+    <string name="agregar_insumo_primero">Agrega insumos para poder calcular dietas</string>
+    <string name="empty_animales">No hay animales</string>
+    <string name="empty_animales_desc">Agrega tu primer animal para comenzar</string>
+    
+    <!-- Dialog Animal -->
     <string name="nombre_animal">Nombre del Animal</string>
     <string name="peso_kg">Peso (kg)</string>
     <string name="consumo_dmi">Consumo DMI (kg/día)</string>
     <string name="tipo_dieta">Tipo de Dieta</string>
     <string name="requerimientos_minimos">Requerimientos Mínimos</string>
-    <string name="requerimientos_maximos">Límites Máximos</string>
-    <string name="guardar">Guardar</string>
+    <string name="requerimientos_maximos">Requerimientos Máximos</string>
+    <string name="proteina_cruda_min">Proteína Cruda Mín (%)</string>
+    <string name="energia_nem_min">Energía NEm Mín (Mcal/kg)</string>
+    <string name="calcio_min">Calcio Mín (%)</string>
+    <string name="fosforo_min">Fósforo Mín (%)</string>
+    <string name="ndf_max">NDF Máx (%)</string>
+    <string name="proteina_cruda_max">Proteína Cruda Máx (%)</string>
     <string name="cancelar">Cancelar</string>
-    <string name="eliminar">Eliminar</string>
-    <string name="animal_guardado">Animal guardado exitosamente</string>
-    <string name="animal_eliminado">Animal eliminado</string>
-    <string name="confirmar_eliminar_animal">¿Eliminar este animal?</string>
+    <string name="guardar">Guardar</string>
+    <string name="editar_animal">Editar Animal</string>
     
-    <!-- Insumos -->
-    <string name="agregar_insumo">Agregar Insumo</string>
-    <string name="editar_insumo">Editar Insumo</string>
+    <!-- Dialog Insumo -->
     <string name="nombre_insumo">Nombre del Insumo</string>
-    <string name="costo_kg">Costo ($/kg)</string>
-    <string name="es_forraje">Es Forraje</string>
+    <string name="es_forraje">¿Es forraje?</string>
     <string name="nutrientes">Nutrientes</string>
-    <string name="insumo_guardado">Insumo guardado exitosamente</string>
-    <string name="insumo_eliminado">Insumo eliminado</string>
-    <string name="confirmar_eliminar_insumo">¿Eliminar este insumo?</string>
+    <string name="editar_insumo">Editar Insumo</string>
     
-    <!-- Stock -->
-    <string name="stock_disponible">Stock Disponible</string>
-    <string name="cantidad_kg">Cantidad (kg)</string>
-    <string name="agregar_stock">Agregar al Stock</string>
-    <string name="actualizar_stock">Actualizar Stock</string>
-    <string name="stock_actualizado">Stock actualizado</string>
-    <string name="sin_stock">Sin stock disponible</string>
-    <string name="ultima_actualizacion">Última actualización: %s</string>
-      <!-- Stock -->
-    <string name="agregar_al_stock">Agregar al Stock</string>
-    <string name="editar_stock">Editar Stock</string>
-
-
     <!-- Historial -->
+    <string name="si">Sis</string>
+    <string name="no">NO</string>
     <string name="historial_titulo">Historial de Dietas</string>
     <string name="sin_historial">No hay dietas guardadas</string>
-    <string name="fecha">Fecha: %s</string>
-    <string name="ver_detalles">Ver Detalles</string>
-    <string name="exportar">Exportar</string>
+    <string name="calcular_primera_dieta">Calcula tu primera dieta desde la página principal</string>
     <string name="eliminar_dieta">Eliminar Dieta</string>
-    <string name="confirmar_eliminar_dieta">¿Eliminar esta dieta del historial?</string>
-    <string name="dieta_eliminada">Dieta eliminada del historial</string>
+    <string name="confirmar_eliminar_insumo">¿Estás seguro de que deseas eliminar esta dieta?</string>
+    <string name="insumo_guardado">Insumo guardado exitosamente</string>
+    <string name="animal_eliminado">Animal Eliminado</string>
+    <string name="ver_detalles">Ver Detalles</string>
+    <string name="confirmar_eliminar_animal">¿Estás seguro de que deseas eliminar este animal?</string>
     
-    <!-- Detalles de Resultados -->
-    <string name="costo_total">Costo Total: $%s/día</string>
-    <string name="costo_por_kg">Costo por kg MS: $%s/kg</string>
-    <string name="metano_producido">Metano: %s g/día</string>
-    <string name="metano_por_kg_dmi">Metano por kg DMI: %s g/kg</string>
-    <string name="total_ms">Total MS: %s kg/día</string>
-    <string name="porcentaje_dieta">%s%%</string>
-    
-    <!-- Errores -->
-    <string name="error_campos_vacios">Por favor completa todos los campos</string>
-    <string name="error_guardar">Error al guardar</string>
-    <string name="error_eliminar">Error al eliminar</string>
-    <string name="error_cargar_datos">Error al cargar datos</string>
-    <string name="error_exportar">Error al exportar archivo</string>
-    <string name="exportacion_exitosa">Archivo exportado: %s</string>
-    
-     <!-- Configuración -->
+    <!-- Settings -->
+    <string name="settings_titulo">Configuración</string>
     <string name="configuracion_titulo">Configuración</string>
     <string name="tema">Tema</string>
     <string name="tema_claro">Claro</string>
     <string name="tema_oscuro">Oscuro</string>
-    <string name="tema_sistema">Según el sistema</string>
-    <string name="sobre_app">Acerca de la App</string>
-    <string name="version">Versión 1.0</string>
-    <string name="acerca_descripcion">OptimaDiet es una aplicación para optimizar dietas de ganado, minimizando costos y emisiones de metano según NASEM (2016).</string>
+    <string name="tema_sistema">Sistema</string>
+    <string name="sobre_app">Sobre la App</string>
+    <string name="version">Versión 1.0.0</string>
     
-    <!-- Diálogos -->
+    <!-- Botones comunes -->
     <string name="aceptar">Aceptar</string>
-    <string name="si">Sí</string>
-    <string name="no">No</string>
-    <string name="cerrar">Cerrar</string>
-    
-    <!-- Empty States -->
-    <string name="empty_animales">No hay animales registrados</string>
-    <string name="empty_animales_desc">Comienza agregando un animal para poder calcular dietas</string>
-    <string name="empty_insumos">No hay insumos registrados</string>
-    <string name="empty_insumos_desc">Agrega insumos para crear dietas optimizadas</string>
-    <string name="empty_stock">No hay stock disponible</string>
-    <string name="empty_stock_desc">Agrega insumos al inventario para comenzar</string>
+    <string name="eliminar">Eliminar</string>
+    <string name="editar">Editar</string>
+    <string name="compartir">Compartir</string>
     
     <!-- Tipos de Dieta -->
-    <string name="alto_forraje">Alto Forraje (≥40%%)</string>
-    <string name="forraje_intermedio">Forraje Intermedio (20–40%%)</string>
-    <string name="bajo_forraje">Bajo Forraje (≤20%%)</string>
+    <string name="alto_forraje">Alto Forraje</string>
+    <string name="intermedio">Intermedio</string>
+    <string name="bajo_forraje">Bajo Forraje</string>
 </resources>

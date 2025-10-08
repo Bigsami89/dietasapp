@@ -57,7 +57,7 @@ class HistoryFragment : Fragment() {
             } catch (e: Exception) {
                 Toast.makeText(
                     requireContext(),
-                    getString(R.string.error_cargar_datos),
+                    getString(R.string.error_seleccionar_animal),
                     Toast.LENGTH_SHORT
                 ).show()
             }

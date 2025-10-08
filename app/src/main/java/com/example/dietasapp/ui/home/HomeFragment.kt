@@ -11,7 +11,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.dietasapp.R
 import com.example.dietasapp.calculation.optimizer.DietAPI
+import com.example.dietasapp.calculation.optimizer.DietAPI.OptimizationMode
 import com.example.dietasapp.data.Animal
+import com.example.dietasapp.data.Insumo
 import com.example.dietasapp.database.BaseDeDatosJSON
 import com.example.dietasapp.databinding.FragmentHomeBinding
 import com.example.dietasapp.domain.Dieta
@@ -31,11 +33,13 @@ class HomeFragment : Fragment() {
     private lateinit var dietAPI: DietAPI
     private lateinit var exportador: ExportadorExcel
 
+    private lateinit var ingredientesAdapter: IngredienteSeleccionableAdapter
+    private lateinit var composicionAdapter: ComposicionAdapter
+
     private var animales: List<Animal> = emptyList()
+    private var insumos: List<Insumo> = emptyList()
     private var animalSeleccionado: Animal? = null
     private var dietaActual: Dieta? = null
-
-    private lateinit var composicionAdapter: ComposicionAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -55,122 +59,193 @@ class HomeFragment : Fragment() {
         dietAPI = DietAPI()
         exportador = ExportadorExcel(requireContext())
 
-        // Configurar RecyclerView
-        composicionAdapter = ComposicionAdapter()
-        binding.recyclerComposicion.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = composicionAdapter
-        }
+        // Configurar RecyclerViews
+        setupRecyclerViews()
 
         // Configurar listeners
         setupListeners()
 
-        // Cargar datos
-        cargarAnimales()
+        // Cargar datos iniciales
+        cargarDatos()
+    }
+
+    private fun setupRecyclerViews() {
+        // Adapter de ingredientes seleccionables
+        ingredientesAdapter = IngredienteSeleccionableAdapter { ingredientesSeleccionados ->
+            actualizarContadorSeleccion(ingredientesSeleccionados.size)
+        }
+
+        binding.rvIngredientes.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = ingredientesAdapter
+        }
+
+        // Adapter de composición de dieta
+        composicionAdapter = ComposicionAdapter()
+        binding.rvComposicion.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = composicionAdapter
+        }
     }
 
     private fun setupListeners() {
-        // Listener del spinner de animales
-        binding.spinnerAnimal.setOnItemClickListener { _, _, position, _ ->
-            animalSeleccionado = animales[position]
-            mostrarInfoAnimal(animalSeleccionado!!)
+        // Botón seleccionar todos
+        binding.btnSeleccionarTodos.setOnClickListener {
+            if (ingredientesAdapter.getSelectedIngredientes().size == insumos.size) {
+                ingredientesAdapter.deselectAll()
+                binding.btnSeleccionarTodos.text = getString(R.string.seleccionar_todos)
+            } else {
+                ingredientesAdapter.selectAll()
+                binding.btnSeleccionarTodos.text = getString(R.string.deseleccionar_todos)
+            }
         }
 
-        // Listener del botón calcular
+        // Botón calcular
         binding.btnCalcular.setOnClickListener {
             calcularDieta()
         }
 
-        // Listener del botón exportar
+        // Botón exportar
         binding.btnExportar.setOnClickListener {
             exportarDieta()
         }
 
-        // Listener del botón guardar
+        // Botón guardar
         binding.btnGuardar.setOnClickListener {
             guardarDieta()
         }
     }
 
-    private fun cargarAnimales() {
+    private fun cargarDatos() {
         lifecycleScope.launch {
             try {
-                animales = inventario.obtenerAnimales()
+                // Cargar animales
+                animales = withContext(Dispatchers.IO) {
+                    inventario.obtenerAnimales()
+                }
 
+                // Cargar insumos
+                insumos = withContext(Dispatchers.IO) {
+                    inventario.obtenerInsumos()
+                }
+
+                // Actualizar UI
                 if (animales.isEmpty()) {
                     mostrarEmptyState()
                 } else {
-                    ocultarEmptyState()
                     configurarSpinnerAnimales()
+                    mostrarIngredientes()
                 }
+
             } catch (e: Exception) {
                 Toast.makeText(
                     requireContext(),
-                    getString(R.string.error_cargar_datos),
-                    Toast.LENGTH_SHORT
+                    "Error al cargar datos: ${e.message}",
+                    Toast.LENGTH_LONG
                 ).show()
             }
         }
     }
 
     private fun configurarSpinnerAnimales() {
-        val nombresAnimales = animales.map { it.nombre }
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_dropdown_item_1line,
-            nombresAnimales
+            animales.map { it.nombre }
         )
+
         binding.spinnerAnimal.setAdapter(adapter)
+        binding.spinnerAnimal.setOnItemClickListener { _, _, position, _ ->
+            animalSeleccionado = animales[position]
+        }
+
+        // Seleccionar el primero por defecto
+        if (animales.isNotEmpty()) {
+            binding.spinnerAnimal.setText(animales[0].nombre, false)
+            animalSeleccionado = animales[0]
+        }
     }
 
-    private fun mostrarInfoAnimal(animal: Animal) {
-        binding.layoutInfoAnimal.visibility = View.VISIBLE
-        binding.tvPesoAnimal.text = "Peso: ${animal.pesoKg} kg"
-        binding.tvDMIAnimal.text = "DMI: ${animal.consumoDMI} kg/día"
+    private fun mostrarIngredientes() {
+        if (insumos.isEmpty()) {
+            binding.rvIngredientes.visibility = View.GONE
+            binding.tvSinIngredientes.visibility = View.VISIBLE
+            binding.btnSeleccionarTodos.isEnabled = false
+        } else {
+            binding.rvIngredientes.visibility = View.VISIBLE
+            binding.tvSinIngredientes.visibility = View.GONE
+            binding.btnSeleccionarTodos.isEnabled = true
+
+            val items = insumos.map { IngredienteSeleccionable(it) }
+            ingredientesAdapter.submitList(items)
+        }
+    }
+
+    private fun mostrarEmptyState() {
+        binding.layoutEmptyState.visibility = View.VISIBLE
+        binding.cardAnimal.visibility = View.GONE
+        binding.cardIngredientes.visibility = View.GONE
+        binding.cardOptimizacion.visibility = View.GONE
+        binding.btnCalcular.visibility = View.GONE
+    }
+
+    private fun actualizarContadorSeleccion(cantidad: Int) {
+        binding.tvIngredientesSeleccionados.text = if (cantidad == 0) {
+            getString(R.string.ingredientes_seleccionados_none)
+        } else {
+            getString(R.string.ingredientes_seleccionados_count, cantidad)
+        }
+
+        // Actualizar botón de seleccionar todos
+        binding.btnSeleccionarTodos.text = if (cantidad == insumos.size) {
+            getString(R.string.deseleccionar_todos)
+        } else {
+            getString(R.string.seleccionar_todos)
+        }
     }
 
     private fun calcularDieta() {
-        if (animalSeleccionado == null) {
+        // Validaciones
+        val animal = animalSeleccionado
+        if (animal == null) {
             Toast.makeText(
                 requireContext(),
-                getString(R.string.seleccionar_animal),
+                getString(R.string.error_seleccionar_animal),
                 Toast.LENGTH_SHORT
             ).show()
             return
         }
 
+        val ingredientesSeleccionados = ingredientesAdapter.getSelectedIngredientes()
+        if (ingredientesSeleccionados.isEmpty()) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.error_seleccionar_ingredientes),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        // Determinar modo de optimización
+        val modo = if (binding.rbMinimizarCosto.isChecked) {
+            OptimizationMode.COST
+        } else {
+            OptimizationMode.METHANE
+        }
+
+        // Calcular dieta
         lifecycleScope.launch {
             try {
-                // Mostrar progreso
+                // Mostrar loading
                 binding.layoutCalculando.visibility = View.VISIBLE
-                binding.layoutResultado.visibility = View.GONE
                 binding.btnCalcular.isEnabled = false
+                binding.layoutResultado.visibility = View.GONE
 
-                // Obtener insumos disponibles
-                val insumos = inventario.obtenerInventarioDisponible()
-                    .map { it.insumo }
-
-                if (insumos.isEmpty()) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.sin_insumos),
-                        Toast.LENGTH_LONG
-                    ).show()
-                    return@launch
-                }
-
-                // Determinar modo de optimización
-                val modo = if (binding.radioMinimizarCosto.isChecked) {
-                    DietAPI.OptimizationMode.COST
-                } else {
-                    DietAPI.OptimizationMode.METHANE
-                }
-
-                // Calcular dieta en background
-                val dieta = withContext(Dispatchers.Default) {
+                // Calcular en background
+                val dieta = withContext(Dispatchers.IO) {
                     dietAPI.calculateOptimalDiet(
-                        animal = animalSeleccionado!!,
-                        ingredientes = insumos,
+                        animal = animal,
+                        ingredientes = ingredientesSeleccionados,
                         optimizationMode = modo
                     )
                 }
@@ -207,23 +282,23 @@ class HomeFragment : Fragment() {
         binding.layoutResultado.visibility = View.VISIBLE
 
         // Resumen económico
-        binding.tvCostoTotal.text = String.format(
-            getString(R.string.costo_total),
-            "%.2f".format(dieta.costoTotal)
+        binding.tvCostoTotal.text = getString(
+            R.string.costo_total,
+            String.format("%.2f", dieta.costoTotal)
         )
-        binding.tvCostoPorKg.text = String.format(
-            getString(R.string.costo_por_kg),
-            "%.4f".format(dieta.costoPorKgMS())
+        binding.tvCostoPorKg.text = getString(
+            R.string.costo_por_kg,
+            String.format("%.4f", dieta.costoPorKgMS())
         )
 
         // Impacto ambiental
-        binding.tvMetano.text = String.format(
-            getString(R.string.metano_producido),
-            "%.2f".format(dieta.metanoProducidoGramos)
+        binding.tvMetano.text = getString(
+            R.string.metano_producido,
+            String.format("%.2f", dieta.metanoProducidoGramos)
         )
-        binding.tvMetanoPorKg.text = String.format(
-            getString(R.string.metano_por_kg_dmi),
-            "%.2f".format(dieta.metanoPorKgDMI())
+        binding.tvMetanoPorKg.text = getString(
+            R.string.metano_por_kg_dmi,
+            String.format("%.2f", dieta.metanoPorKgDMI())
         )
 
         // Composición
@@ -232,7 +307,8 @@ class HomeFragment : Fragment() {
             ComposicionItem(
                 nombre = nombre,
                 cantidad = kg,
-                porcentaje = (kg / totalKg) * 100.0
+                porcentaje = (kg / totalKg) * 100.0,
+                costo = obtenerCostoIngrediente(nombre)
             )
         }.sortedByDescending { it.porcentaje }
 
@@ -242,6 +318,10 @@ class HomeFragment : Fragment() {
         binding.root.post {
             binding.root.smoothScrollTo(0, binding.layoutResultado.top)
         }
+    }
+
+    private fun obtenerCostoIngrediente(nombre: String): Double {
+        return insumos.find { it.nombre == nombre }?.costo ?: 0.0
     }
 
     private fun exportarDieta() {
@@ -260,7 +340,7 @@ class HomeFragment : Fragment() {
                     is ExportadorExcel.ExportResult.Success -> {
                         Toast.makeText(
                             requireContext(),
-                            String.format(getString(R.string.exportacion_exitosa), result.filePath),
+                            getString(R.string.exportacion_exitosa, result.filePath),
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -287,44 +367,31 @@ class HomeFragment : Fragment() {
 
         lifecycleScope.launch {
             try {
-                val baseDatos = BaseDeDatosJSON(requireContext())
-                val exito = baseDatos.guardarDieta(dieta)
+                val exito = withContext(Dispatchers.IO) {
+                    inventario.guardarDieta(dieta)
+                }
 
                 if (exito) {
                     Toast.makeText(
                         requireContext(),
-                        getString(R.string.dieta_guardada),
+                        getString(R.string.dieta_guardada_exitosamente),
                         Toast.LENGTH_SHORT
                     ).show()
                 } else {
                     Toast.makeText(
                         requireContext(),
-                        getString(R.string.error_guardar),
+                        getString(R.string.error_guardar_dieta),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(
                     requireContext(),
-                    "${getString(R.string.error_guardar)}: ${e.message}",
+                    "${getString(R.string.error_guardar_dieta)}: ${e.message}",
                     Toast.LENGTH_SHORT
                 ).show()
             }
         }
-    }
-
-    private fun mostrarEmptyState() {
-        binding.layoutEmptyState.visibility = View.VISIBLE
-        binding.cardAnimal.visibility = View.GONE
-        binding.cardModo.visibility = View.GONE
-        binding.btnCalcular.visibility = View.GONE
-    }
-
-    private fun ocultarEmptyState() {
-        binding.layoutEmptyState.visibility = View.GONE
-        binding.cardAnimal.visibility = View.VISIBLE
-        binding.cardModo.visibility = View.VISIBLE
-        binding.btnCalcular.visibility = View.VISIBLE
     }
 
     override fun onDestroyView() {
@@ -332,10 +399,3 @@ class HomeFragment : Fragment() {
         _binding = null
     }
 }
-
-// Data class para items de composición
-data class ComposicionItem(
-    val nombre: String,
-    val cantidad: Double,
-    val porcentaje: Double
-)

@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import java.text.SimpleDateFormat
+import java.util.*
+
 
 /**
  * Helper para gestionar permisos y operaciones de exportación
@@ -38,22 +41,33 @@ object ExportHelper {
         }
     }
 
-    /**
-     * Genera un nombre de archivo único basado en fecha y hora
-     */
-    fun generateFileName(prefix: String = "Dieta"): String {
-        val timestamp = System.currentTimeMillis()
-        val dateFormat = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
-        return "${prefix}_${dateFormat.format(java.util.Date(timestamp))}"
-    }
 
     /**
      * Genera un nombre de archivo descriptivo para una dieta
      */
-    fun generateDietFileName(animalName: String): String {
-        val sanitizedName = animalName.replace(Regex("[^a-zA-Z0-9]"), "_")
-        val timestamp = System.currentTimeMillis()
-        val dateFormat = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
-        return "Dieta_${sanitizedName}_${dateFormat.format(java.util.Date(timestamp))}"
+    fun generateDietFileName(animalNombre: String): String {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+            .format(Date())
+
+        val nombreLimpio = animalNombre
+            .replace(" ", "_")
+            .replace(Regex("[^a-zA-Z0-9_]"), "")
+            .take(20)
+
+        return "Dieta_${nombreLimpio}_$timestamp"
+    }
+
+    /**
+     * Formatea un número con separador de miles
+     */
+    fun formatNumber(number: Double, decimals: Int = 2): String {
+        return String.format(Locale.getDefault(), "%.${decimals}f", number)
+    }
+
+    /**
+     * Formatea moneda
+     */
+    fun formatCurrency(amount: Double): String {
+        return String.format(Locale.getDefault(), "$%.2f", amount)
     }
 }

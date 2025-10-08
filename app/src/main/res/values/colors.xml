@@ -13,6 +13,9 @@
     <!-- Colores de acento -->
     <color name="accent_blue">#2196F3</color>
     <color name="accent_cyan">#00BCD4</color>
+    <color name="composicion_alto">#4CAF50</color>       <!-- Verde para porcentajes altos (≥40%) -->
+    <color name="composicion_medio">#2196F3</color>      <!-- Azul para porcentajes medios (20-40%) -->
+    <color name="composicion_bajo">#9E9E9E</color>   
     
     <!-- Colores de fondo -->
     <color name="background_light">#F5F7FA</color>

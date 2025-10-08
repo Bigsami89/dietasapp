@@ -5,6 +5,8 @@ import com.example.dietasapp.data.Insumo
 import com.example.dietasapp.data.InventarioItem
 import com.example.dietasapp.database.BaseDeDatos
 
+import com.example.dietasapp.domain.Dieta
+
 /**
  * Gestor de inventario
  * Proporciona operaciones de alto nivel sobre animales, insumos e inventario
@@ -201,6 +203,30 @@ class Inventario(private val baseDeDatos: BaseDeDatos) {
         }
 
         return true
+    }
+    suspend fun guardarDieta(dieta: Dieta): Boolean {
+        return baseDeDatos.guardarDieta(dieta)
+    }
+
+    /**
+     * Obtiene todas las dietas guardadas
+     */
+    suspend fun obtenerDietas(): List<Dieta> {
+        return baseDeDatos.obtenerDietas()
+    }
+
+    /**
+     * Obtiene dietas de un animal específico
+     */
+    suspend fun obtenerDietasPorAnimal(animalId: String): List<Dieta> {
+        return baseDeDatos.obtenerDietasPorAnimal(animalId)
+    }
+
+    /**
+     * Elimina una dieta
+     */
+    suspend fun eliminarDieta(fechaCreacion: Long): Boolean {
+        return baseDeDatos.eliminarDieta(fechaCreacion)
     }
 
     // ============= REPORTES Y ESTADÍSTICAS =============

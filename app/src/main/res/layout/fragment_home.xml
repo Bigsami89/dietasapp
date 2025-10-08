@@ -49,7 +49,7 @@
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/seleccionar_animal">
+                    android:hint="Animal">
 
                     <AutoCompleteTextView
                         android:id="@+id/spinnerAnimal"
@@ -57,37 +57,80 @@
                         android:layout_height="wrap_content"
                         android:inputType="none" />
                 </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-                <!-- Info del animal seleccionado -->
+        <!-- Card: Selección de Ingredientes -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardIngredientes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
                 <LinearLayout
-                    android:id="@+id/layoutInfoAnimal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginTop="12dp"
-                    android:visibility="gone"
-                    tools:visibility="visible">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
 
                     <TextView
-                        android:id="@+id/tvPesoAnimal"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Dietasapp.Body2"
-                        tools:text="Peso: 650 kg" />
+                        android:layout_weight="1"
+                        android:text="@string/seleccionar_ingredientes"
+                        android:textAppearance="@style/TextAppearance.Dietasapp.Headline2" />
 
-                    <TextView
-                        android:id="@+id/tvDMIAnimal"
-                        android:layout_width="match_parent"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSeleccionarTodos"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Dietasapp.Body2"
-                        tools:text="DMI: 22 kg/día" />
+                        android:text="@string/seleccionar_todos"
+                        android:textSize="12sp" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvIngredientesSeleccionados"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/ingredientes_seleccionados_none"
+                    android:textAppearance="@style/TextAppearance.Dietasapp.Body2"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginBottom="12dp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvIngredientes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxHeight="300dp"
+                    android:nestedScrollingEnabled="false"
+                    tools:listitem="@layout/item_ingrediente_seleccionable"
+                    tools:itemCount="5" />
+
+                <TextView
+                    android:id="@+id/tvSinIngredientes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/sin_ingredientes_inventario"
+                    android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
+                    android:textAlignment="center"
+                    android:padding="24dp"
+                    android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Card: Modo de Optimización -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardModo"
+            android:id="@+id/cardOptimizacion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
@@ -108,19 +151,19 @@
                     android:layout_marginBottom="12dp" />
 
                 <RadioGroup
-                    android:id="@+id/radioGroupModo"
+                    android:id="@+id/rgOptimizacion"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 
                     <com.google.android.material.radiobutton.MaterialRadioButton
-                        android:id="@+id/radioMinimizarCosto"
+                        android:id="@+id/rbMinimizarCosto"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/minimizar_costo"
                         android:checked="true" />
 
                     <com.google.android.material.radiobutton.MaterialRadioButton
-                        android:id="@+id/radioMinimizarMetano"
+                        android:id="@+id/rbMinimizarMetano"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/minimizar_metano" />
@@ -132,46 +175,43 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCalcular"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
+            android:layout_height="wrap_content"
             android:text="@string/calcular_button"
             android:textSize="16sp"
-            app:cornerRadius="8dp"
+            android:paddingVertical="16dp"
+            android:layout_marginBottom="16dp"
             app:icon="@drawable/ic_calculator"
-            app:iconGravity="start"
-            android:layout_marginBottom="16dp" />
+            app:iconGravity="textStart" />
 
-        <!-- Progress Indicator -->
+        <!-- Layout: Calculando (Progress) -->
         <LinearLayout
             android:id="@+id/layoutCalculando"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center"
-            android:padding="24dp"
-            android:visibility="gone"
-            tools:visibility="visible">
+            android:padding="32dp"
+            android:visibility="gone">
 
-            <com.google.android.material.progressindicator.CircularProgressIndicator
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:indeterminate="true" />
+            <ProgressBar
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginBottom="16dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/calculando"
-                android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
-                android:layout_marginTop="16dp" />
+                android:textAppearance="@style/TextAppearance.Dietasapp.Body1" />
         </LinearLayout>
 
-        <!-- Resultado de la Dieta -->
+        <!-- Layout: Resultado -->
         <LinearLayout
             android:id="@+id/layoutResultado"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone"
-            tools:visibility="visible">
+            android:visibility="gone">
 
             <TextView
                 android:layout_width="match_parent"
@@ -186,7 +226,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#E3F2FD">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -197,7 +238,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Resumen Económico"
+                        android:text="💰 Resumen Económico"
                         android:textAppearance="@style/TextAppearance.Dietasapp.Headline2"
                         android:layout_marginBottom="12dp" />
 
@@ -206,14 +247,15 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
-                        tools:text="Costo Total: $45.50/día" />
+                        android:layout_marginBottom="4dp"
+                        tools:text="Costo total: $15.50/día" />
 
                     <TextView
                         android:id="@+id/tvCostoPorKg"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Dietasapp.Body2"
-                        tools:text="Costo por kg MS: $2.07/kg" />
+                        android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
+                        tools:text="Costo por kg MS: $1.29/kg" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -223,7 +265,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#E8F5E9">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -234,7 +277,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/impacto_ambiental"
+                        android:text="🌍 Impacto Ambiental"
                         android:textAppearance="@style/TextAppearance.Dietasapp.Headline2"
                         android:layout_marginBottom="12dp" />
 
@@ -243,18 +286,19 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
-                        tools:text="Metano: 245.8 g/día" />
+                        android:layout_marginBottom="4dp"
+                        tools:text="Metano producido: 280.5 g/día" />
 
                     <TextView
                         android:id="@+id/tvMetanoPorKg"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Dietasapp.Body2"
-                        tools:text="Metano por kg DMI: 11.2 g/kg" />
+                        android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
+                        tools:text="Metano por kg DMI: 23.4 g/kg" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Card: Composición -->
+            <!-- Card: Composición de la Dieta -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -276,21 +320,22 @@
                         android:layout_marginBottom="12dp" />
 
                     <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerComposicion"
+                        android:id="@+id/rvComposicion"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:nestedScrollingEnabled="false"
-                        tools:itemCount="4"
-                        tools:listitem="@layout/item_ingrediente" />
+                        tools:listitem="@layout/item_composicion"
+                        tools:itemCount="4" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Botones de acción -->
+            <!-- Botones de Acción -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="end">
+                android:gravity="end"
+                android:layout_marginBottom="16dp">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnExportar"
@@ -298,13 +343,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/exportar_excel"
-                    android:layout_marginEnd="8dp" />
+                    android:layout_marginEnd="8dp"
+                    app:icon="@drawable/ic_export"
+                    app:iconGravity="textStart" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnGuardar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/guardar_dieta" />
+                    android:text="@string/guardar_dieta"
+                    app:icon="@drawable/ic_save"
+                    app:iconGravity="textStart" />
             </LinearLayout>
         </LinearLayout>
 
