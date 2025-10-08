@@ -7,225 +7,142 @@ import com.example.dietasapp.domain.Ingredient
 import org.ojalgo.optimisation.ExpressionsBasedModel
 import org.ojalgo.optimisation.Optimisation
 import org.ojalgo.optimisation.Variable
+import java.text.Normalizer
 
 /**
- * Motor de optimización de dietas usando ojAlgo
- * Implementa programación lineal para encontrar la dieta óptima
- *
- * Corresponde a la clase "DietOptimizer" del diagrama
+ * Motor de optimización de dietas usando ojAlgo.
+ * Implementa programación lineal para encontrar la dieta óptima.
  */
 class DietOptimizer(
     private val components: List<IDietComponent>
 ) {
 
-    /**
-     * Optimiza la dieta para un animal con los ingredientes disponibles
-     *
-     * @param profile Perfil del animal con requerimientos nutricionales
-     * @param ingredients Lista de ingredientes disponibles
-     * @return Resultado de la optimización con composición de la dieta
-     */
     fun optimize(
         profile: AnimalProfile,
         ingredients: List<Ingredient>
     ): DietResult {
 
-        println("\n========================================")
+        println("")
+        println("========================================")
         println("Iniciando optimización de dieta")
         println("========================================")
         println("Animal: ${profile.name}")
         println("Peso: ${profile.bodyWeightKg} kg")
-        println("DMI requerido: ${profile.dmiKgDay} kg/día")
-        println("Ingredientes disponibles: ${ingredients.size}")
+        println("DMI requerido: ${"%.3f".format(profile.dmiKgDay)} kg/día")
+
+        // 1) Deduplicar ingredientes por nombre normalizado
+        val uniqueIngredients = dedupByName(ingredients)
+        if (uniqueIngredients.size != ingredients.size) {
+            val duplicated = ingredients.groupBy { normalize(it.name) }
+                .filter { it.value.size > 1 }
+                .map { it.value[0].name to it.value.size }
+            if (duplicated.isNotEmpty()) {
+                println("⚠ Ingredientes duplicados por equals/hashCode / nombre normalizado:")
+                duplicated.forEach { (n, c) -> println("   - $n: $c apariciones") }
+            }
+        }
+        println("Ingredientes disponibles: ${uniqueIngredients.size}")
         println("Componentes a aplicar: ${components.size}")
         println("----------------------------------------")
 
-        try {
-            // 1. Crear modelo de ojAlgo
-            val model = ExpressionsBasedModel()
+        // 2) Modelo y variables
+        val model = ExpressionsBasedModel()
+        val variables = LinkedHashMap<Ingredient, Variable>()
 
-            // 2. Crear variables de decisión (una por ingrediente)
-            val variables = createDecisionVariables(model, ingredients)
-
-            // 3. Aplicar todos los componentes (objetivos y restricciones)
-            applyComponents(model, variables, profile, ingredients)
-
-            // 4. Resolver el modelo
-            val result = solveModel(model, variables, ingredients)
-
-            // 5. Mostrar resultados
-            logOptimizationResult(result)
-
-            return result
-
-        } catch (e: Exception) {
-            println("ERROR durante la optimización: ${e.message}")
-            e.printStackTrace()
-            return DietResult.error(Optimisation.State.FAILED)
-        }
-    }
-
-    /**
-     * Crea variables de decisión para cada ingrediente
-     * Cada variable representa los kg/día de ese ingrediente en la dieta
-     */
-    private fun createDecisionVariables(
-        model: ExpressionsBasedModel,
-        ingredients: List<Ingredient>
-    ): Map<Ingredient, Variable> {
-
-        val variables = mutableMapOf<Ingredient, Variable>()
-
-        ingredients.forEach { ingredient ->
-            // Crear variable con límites
-            // Límite inferior: 0 kg (no puede ser negativo)
-            // Límite superior: sin restricción explícita (será limitado por DMI)
-            val variable = Variable.make(ingredient.name)
-                .lower(0.0)  // No puede haber cantidades negativas
-
-            variables[ingredient] = variable
-            model.addVariable(variable)
+        uniqueIngredients.forEachIndexed { idx, ing ->
+            val varName = sanitizeName(ing.name) + "_$idx"
+            // ⬇️ ojAlgo 53.x: crea la variable DIRECTO en el modelo
+            val v = model.addVariable(varName)
+                .lower(0.0)
+                .upper(profile.dmiKgDay) // no puede superar el DMI total
+            // .weight(0.0) // opcional, el objetivo lo ponen los componentes
+            variables[ing] = v
         }
 
         println("✓ Creadas ${variables.size} variables de decisión")
-        return variables
-    }
 
-    /**
-     * Aplica todos los componentes (Strategy Pattern)
-     * Cada componente agrega sus restricciones u objetivos al modelo
-     */
-    private fun applyComponents(
-        model: ExpressionsBasedModel,
-        variables: Map<Ingredient, Variable>,
-        profile: AnimalProfile,
-        ingredients: List<Ingredient>
-    ) {
-        println("\nAplicando componentes:")
-
-        components.forEachIndexed { index, component ->
-            println("\n${index + 1}. ${component.getName()}")
-            println("   ${component.getDescription()}")
-
-            try {
-                component.apply(model, variables, profile, ingredients)
-                println("   ✓ Aplicado exitosamente")
-            } catch (e: Exception) {
-                println("   ✗ Error al aplicar: ${e.message}")
-                throw e
-            }
+        // 3) Aplicar componentes (restricciones + objetivo)
+        println("")
+        println("Aplicando componentes:")
+        components.forEachIndexed { i, c ->
+            println("")
+            println("${i + 1}. ${c.getName()}")
+            println("   ${c.getDescription()}")
+            c.apply(model, variables, profile, uniqueIngredients)
+            println("   ✓ Aplicado exitosamente")
         }
-    }
 
-    /**
-     * Resuelve el modelo de optimización
-     */
-    private fun solveModel(
-        model: ExpressionsBasedModel,
-        variables: Map<Ingredient, Variable>,
-        ingredients: List<Ingredient>
-    ): DietResult {
-
-        println("\n========================================")
+        // 4) Resolver
+        println("")
+        println("========================================")
         println("Resolviendo modelo de optimización...")
         println("========================================")
-
-        // Resolver el modelo
-        val result = model.minimise()
-
-        // Verificar estado de la solución
+        val result: Optimisation.Result = model.minimise()
         val state = result.state
         println("Estado de la solución: $state")
 
-        if (!result.state.isOptimal && !result.state.isFeasible) {
-            println("⚠ No se encontró solución factible")
-            return DietResult.error(state)
+        // 5) Resultado
+        val composition = LinkedHashMap<Ingredient, Double>()
+        variables.forEach { (ing, v) ->
+            val qty = v.value?.toDouble() ?: 0.0
+            if (qty > 1e-8) composition[ing] = qty
         }
 
-        // Extraer composición de la dieta
-        val composition = extractComposition(result, variables)
+        val objectiveValue = result.value.toDouble()
+        val totalCost = composition.entries.sumOf { (ing, qty) -> ing.cost * qty }
 
-        // Calcular valor objetivo y otros valores
-        val objectiveValue = result.value
-        val totalCost = calculateTotalCost(composition)
+        println("")
+        println("========================================")
+        println("RESULTADOS DE LA OPTIMIZACIÓN")
+        println("========================================")
+        when (state) {
+            Optimisation.State.OPTIMAL, Optimisation.State.FEASIBLE -> {
+                println("Estado: ${if (state == Optimisation.State.OPTIMAL) "Óptimo" else "Factible"}")
+                println("Costo total (si aplica): ${"%.4f".format(totalCost)}")
+                println("Composición (kg/día):")
+                composition.entries.sortedByDescending { it.value }.forEachIndexed { i, (ing, qty) ->
+                    println("  ${i + 1}. ${ing.name}: ${"%.3f".format(qty)} kg/d")
+                }
+            }
+            else -> {
+                println("Estado: No existe solución factible")
+                runCatching { println(model) } // volcado para diagnóstico
+            }
+        }
+        println("========================================")
 
         return DietResult(
             status = state,
-            composition = composition,
+            composition = composition.toMap(),
             objectiveValue = objectiveValue,
-            totalCost = totalCost,
-            methaneGramsPerDay = 0.0  // Se calculará después con MethaneCalculator
+            methaneGramsPerDay = 0.0,
+            totalCost = totalCost
         )
     }
 
-    /**
-     * Extrae la composición de la dieta del resultado de ojAlgo
-     */
-    private fun extractComposition(
-        result: Optimisation.Result,
-        variables: Map<Ingredient, Variable>
-    ): Map<Ingredient, Double> {
+    // ------------------------ helpers ------------------------
 
-        val composition = mutableMapOf<Ingredient, Double>()
-
-        variables.forEach { (ingredient, variable) ->
-            val amount = variable.value.toDouble()
-
-            // Solo incluir ingredientes con cantidad significativa (>0.001 kg)
-            if (amount > 0.001) {
-                composition[ingredient] = amount
-            }
+    private fun dedupByName(list: List<Ingredient>): List<Ingredient> {
+        val seen = HashSet<String>()
+        val out = ArrayList<Ingredient>(list.size)
+        list.forEach {
+            val key = normalize(it.name)
+            if (seen.add(key)) out.add(it)
         }
-
-        return composition
+        return out
     }
 
-    /**
-     * Calcula el costo total de la dieta
-     */
-    private fun calculateTotalCost(composition: Map<Ingredient, Double>): Double {
-        return composition.entries.sumOf { (ingredient, kg) ->
-            ingredient.cost * kg
-        }
+    private fun normalize(s: String): String {
+        val tmp = Normalizer.normalize(s.trim(), Normalizer.Form.NFD)
+        return tmp.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase()
     }
 
-    /**
-     * Registra los resultados de la optimización
-     */
-    private fun logOptimizationResult(result: DietResult) {
-        println("\n========================================")
-        println("RESULTADOS DE LA OPTIMIZACIÓN")
-        println("========================================")
-        println("Estado: ${result.getStatusMessage()}")
-
-        if (result.isFeasible()) {
-            println("Valor objetivo: ${String.format("%.4f", result.objectiveValue)}")
-            println("Costo total: $${String.format("%.2f", result.totalCost)}/día")
-            println("\nComposición de la dieta:")
-            println("----------------------------------------")
-
-            val totalKg = result.composition.values.sum()
-
-            result.composition.entries
-                .sortedByDescending { it.value }
-                .forEach { (ingredient, kg) ->
-                    val percentage = (kg / totalKg) * 100.0
-                    println("  ${ingredient.name}:")
-                    println("    Cantidad: ${String.format("%.3f", kg)} kg/día")
-                    println("    Porcentaje: ${String.format("%.1f", percentage)}%")
-                    println("    Costo: $${String.format("%.2f", ingredient.cost * kg)}/día")
-                }
-
-            println("----------------------------------------")
-            println("Total MS: ${String.format("%.3f", totalKg)} kg/día")
-
-        } else {
-            println("⚠ No se pudo encontrar una dieta factible")
-            println("Posibles razones:")
-            println("  - Restricciones nutricionales demasiado estrictas")
-            println("  - Ingredientes insuficientes")
-            println("  - Requerimientos incompatibles")
-        }
-        println("========================================\n")
+    private fun sanitizeName(s: String): String {
+        val base = normalize(s)
+        return base.replace("[^a-z0-9_]+".toRegex(), "_")
+            .replace("_+".toRegex(), "_")
+            .trim('_')
+            .ifEmpty { "x" }
     }
 }

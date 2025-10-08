@@ -205,6 +205,9 @@ class HomeFragment : Fragment() {
     }
 
     private fun calcularDieta() {
+
+
+
         // Validaciones
         val animal = animalSeleccionado
         if (animal == null) {
@@ -333,7 +336,8 @@ class HomeFragment : Fragment() {
 
                 val result = exportador.exportar(
                     dieta = dieta,
-                    nombreArchivo = nombreArchivo
+                    nombreArchivo = nombreArchivo,
+                    insumos = insumos // <-- Añade este parámetro
                 )
 
                 when (result) {
