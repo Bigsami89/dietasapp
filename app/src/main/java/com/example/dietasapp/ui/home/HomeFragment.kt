@@ -336,8 +336,7 @@ class HomeFragment : Fragment() {
 
                 val result = exportador.exportar(
                     dieta = dieta,
-                    nombreArchivo = nombreArchivo,
-                    insumos = insumos // <-- Añade este parámetro
+                    nombreArchivo = nombreArchivo
                 )
 
                 when (result) {

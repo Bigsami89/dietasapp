@@ -5,9 +5,8 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import com.example.dietasapp.calculation.methane.MethaneCalculator
+import android.util.Log
 import com.example.dietasapp.domain.Dieta
-import com.example.dietasapp.data.Insumo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.apache.poi.ss.usermodel.*
@@ -19,41 +18,57 @@ import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.Date
+import kotlin.math.abs
 
 /**
  * Exportador de dietas a formato Excel (.xlsx)
- * Utiliza Apache POI para generar archivos Excel completos
+ * SOLO usa la Dieta proporcionada (y lo que está dentro de dieta.animal).
+ * Base primaria de reporte: POR KG DE DMI.
  */
 class ExportadorExcel(private val context: Context) {
 
     companion object {
+        private const val TAG = "ExportadorExcel"
+
         private const val SHEET_RESUMEN = "Resumen"
         private const val SHEET_COMPOSICION = "Composición"
         private const val SHEET_NUTRIENTES = "Nutrientes"
         private const val SHEET_METANO = "Análisis de Metano"
+        private const val SHEET_LOGS = "Registro"
+
+        // Si true, cuando un nutriente en % luce 10× por debajo del mínimo,
+        // se aplica una corrección visual ×10 (no altera la Dieta).
+        private const val AUTO_FIX_PERCENTAGE_X10 = true
+
+        // Advertir si la suma de la mezcla difiere del DMI más de 2%
+        private const val WARN_DIFF_THRESHOLD = 0.02
     }
 
-    /**
-     * Exporta una dieta a un archivo Excel
-     */
+    /** Nutrientes almacenados en g/día en dieta.nutrientesTotales (por convención del proyecto). */
+    private val nutrientsInGrams: Set<String> =
+        setOf("CP", "NDF", "Ca", "P", "Starch", "Fat", "TDN")
+
+    private fun isStoredInGrams(nutr: String) = nutr in nutrientsInGrams
+
+    /** Exporta usando SOLO campos de Dieta. Emite logs a Logcat y hoja "Registro". */
     suspend fun exportar(
         dieta: Dieta,
-        nombreArchivo: String,
-        insumos: List<Insumo>,
-        methaneResult: MethaneCalculator.MethaneResult? = null
+        nombreArchivo: String
     ): ExportResult = withContext(Dispatchers.IO) {
+        val logs = mutableListOf<String>()
         try {
-            println("Iniciando exportación a Excel: $nombreArchivo")
+            logs += "== INICIO EXPORTACIÓN =="
+            logs += "Archivo: $nombreArchivo.xlsx"
+            logs += "Fecha: ${formatDate(System.currentTimeMillis())}"
 
             val workbook = XSSFWorkbook()
             val styles = createStyles(workbook)
 
-            createResumenSheet(workbook, dieta, styles)
-            createComposicionSheet(workbook, dieta, insumos, styles)
-            createNutrientesSheet(workbook, dieta, styles)
-            if (methaneResult != null) {
-                createMetanoSheet(workbook, dieta, methaneResult, styles)
-            }
+            createResumenSheet(workbook, dieta, styles, logs)
+            createComposicionSheet(workbook, dieta, styles, logs)
+            createNutrientesSheet(workbook, dieta, styles, logs)
+            createMetanoSheet(workbook, dieta, styles, logs)
+            createLogsSheet(workbook, styles, logs)
 
             val fileName = "$nombreArchivo.xlsx"
             val outputStream = createOutputStream(fileName)
@@ -63,46 +78,100 @@ class ExportadorExcel(private val context: Context) {
             outputStream.close()
             workbook.close()
 
-            val filePath = getFilePath(fileName)
-            println("✓ Archivo Excel exportado: $filePath")
+            val path = getFilePath(fileName)
+            logs += "✓ Archivo Excel exportado: $path"
+            logs += "== FIN EXPORTACIÓN =="
 
-            ExportResult.Success(filePath)
+            dumpLogs(logs)
+            ExportResult.Success(path)
         } catch (e: Exception) {
-            println("Error al exportar a Excel: ${e.message}")
+            logs += "Error al exportar: ${e.message}"
+            dumpLogs(logs)
             e.printStackTrace()
             ExportResult.Error(e.message ?: "Error desconocido")
         }
     }
 
-    // ============= CREACIÓN DE HOJAS =============
+    // ============= HELPERS SOLO-DIETA =============
+
+    private fun totalKgMezcla(dieta: Dieta): Double =
+        dieta.composicion.values.sum().coerceAtLeast(0.0)
+
+    /**
+     * Valor por kg de DMI según la unidad del requerimiento del nutriente.
+     * - Para %: (g/día -> kg/día) / DMI => fracción (→ % en display)
+     * - Para Mcal/kg: (Mcal/día) / DMI => Mcal/kg
+     * - Fallback:
+     *    * si viene en g/día -> g/kg DMI (conversión a kg si quieres % no aplica aquí)
+     *    * si ya está en unidad base/día -> base/kg DMI
+     */
+    private fun perKgDMI(nutriente: String, totalCrudo: Double, dmi: Double): Double {
+        if (dmi <= 0.0) return 0.0
+        return when (getRequirementUnit(nutriente)) {
+            "%" -> {
+                // totalCrudo (g/día) -> kg/día -> / DMI = fracción
+                val kgDia = if (isStoredInGrams(nutriente)) totalCrudo / 1000.0 else totalCrudo
+                kgDia / dmi
+            }
+            "Mcal/kg" -> {
+                // totalCrudo (Mcal/día) / DMI
+                totalCrudo / dmi
+            }
+            else -> {
+                // Fallback: si está en g/día => g/kg DMI; si no, base/día / DMI
+                if (isStoredInGrams(nutriente)) (totalCrudo / dmi) / 1000.0 else totalCrudo / dmi
+            }
+        }
+    }
+
+    /**
+     * Si el nutriente es % y luce 10× por debajo del mínimo, corrige visualmente x10.
+     * Devuelve (valorPosibleCorregido, seCorrigió?).
+     */
+    private fun maybeFixPercentScale(
+        nutrient: String,
+        achievedFrac: Double, // fracción (0..1)
+        minReqPct: Double?,   // % (por ej. 13.0)
+        logs: MutableList<String>
+    ): Pair<Double, Boolean> {
+        if (!AUTO_FIX_PERCENTAGE_X10 || minReqPct == null || minReqPct <= 0.0) return achievedFrac to false
+        val alcPct = achievedFrac * 100.0
+        val tooLow = alcPct < (0.5 * minReqPct)
+        val nearIfScaled = (alcPct * 10.0) in (0.6 * minReqPct)..(1.4 * minReqPct)
+        return if (tooLow && nearIfScaled) {
+            logs += "CORRECCIÓN ×10: $nutrient (alcanzado=${"%.2f".format(alcPct)}%, min=${"%.2f".format(minReqPct)}%)"
+            (achievedFrac * 10.0) to true
+        } else achievedFrac to false
+    }
+
+    // ============= HOJAS =============
 
     private fun createResumenSheet(
         workbook: Workbook,
         dieta: Dieta,
-        styles: ExcelStyles
+        styles: ExcelStyles,
+        logs: MutableList<String>
     ) {
         val sheet = workbook.createSheet(SHEET_RESUMEN)
         var rowNum = 0
 
-        // Título
         sheet.createRow(rowNum).also { row ->
             row.createCell(0).apply {
-                setCellValue("REPORTE DE DIETA ÓPTIMA")
+                setCellValue("REPORTE DE DIETA (POR KG DMI)")
                 cellStyle = styles.titleStyle
             }
         }
         sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 3))
-        rowNum += 2 // línea en blanco
+        rowNum += 2
 
-        // Fecha
         sheet.createRow(rowNum++).apply {
             createCell(0).setCellValue("Fecha de generación:")
             createCell(1).setCellValue(formatDate(System.currentTimeMillis()))
         }
 
-        rowNum++ // línea en blanco
+        rowNum++
 
-        // Información del animal
+        // Info del animal (dentro de Dieta)
         sheet.createRow(rowNum).apply {
             createCell(0).apply {
                 setCellValue("INFORMACIÓN DEL ANIMAL")
@@ -117,40 +186,43 @@ class ExportadorExcel(private val context: Context) {
         createDataRow(sheet, rowNum++, "Consumo DMI objetivo:", "${dieta.animal.consumoDMI} kg/día", styles)
         createDataRow(sheet, rowNum++, "Tipo de dieta:", dieta.animal.tipo.descripcion, styles)
 
-        rowNum++ // línea en blanco
+        rowNum++
 
-        // Resultados económicos
+        // Económicos por kg mezcla (referencial)
         sheet.createRow(rowNum).apply {
             createCell(0).apply {
-                setCellValue("RESULTADOS ECONÓMICOS")
+                setCellValue("RESULTADOS ECONÓMICOS (POR KG)")
                 cellStyle = styles.headerStyle
             }
         }
         sheet.addMergedRegion(CellRangeAddress(rowNum, rowNum, 0, 1))
         rowNum++
 
+        val totalKg = totalKgMezcla(dieta)
+        val dmi = dieta.animal.consumoDMI.coerceAtLeast(0.0)
+        val costoPorKg = dieta.costoPorKgMS().coerceAtLeast(0.0)
+
         sheet.createRow(rowNum++).apply {
-            createCell(0).setCellValue("Costo total:")
+            createCell(0).setCellValue("Costo por kg mezcla (MS):")
             createCell(1).apply {
-                setCellValue("\$${String.format("%.2f", dieta.costoTotal)}/día")
+                setCellValue(costoPorKg)
+                cellStyle = styles.currencyStyle
             }
         }
-        sheet.createRow(rowNum++).apply {
-            createCell(0).setCellValue("Costo por kg MS:")
-            createCell(1).apply {
-                setCellValue("\$${String.format("%.4f", dieta.costoPorKgMS())}/kg")
+
+        // Diferencia mezcla vs DMI
+        val diff = if (dmi > 0) abs(totalKg - dmi) / dmi else 0.0
+        if (diff > WARN_DIFF_THRESHOLD) {
+            sheet.createRow(rowNum++).apply {
+                createCell(0).setCellValue("AVISO: La suma de mezcla difiere del DMI")
+                createCell(1).setCellValue(String.format(Locale.US, "%.2f %%", diff * 100))
             }
+            logs += "AVISO: totalMezcla=${"%.3f".format(totalKg)} kg/d, DMI=${"%.3f".format(dmi)} kg/d (diff=${"%.2f".format(diff * 100)}%)"
+        } else {
+            rowNum++
         }
 
-        val totalKg = dieta.composicion.values.sum()
-        sheet.createRow(rowNum++).apply {
-            createCell(0).setCellValue("Total MS suministrado:")
-            createCell(1).setCellValue(String.format("%.2f", totalKg) + " kg/día")
-        }
-
-        rowNum++ // línea en blanco
-
-        // Impacto ambiental
+        // Metano
         sheet.createRow(rowNum).apply {
             createCell(0).apply {
                 setCellValue("IMPACTO AMBIENTAL")
@@ -160,35 +232,50 @@ class ExportadorExcel(private val context: Context) {
         sheet.addMergedRegion(CellRangeAddress(rowNum, rowNum, 0, 1))
         rowNum++
 
-        createDataRow(sheet, rowNum++, "Metano producido:", "${String.format("%.2f", dieta.metanoProducidoGramos)} g/día", styles)
-        createDataRow(sheet, rowNum++, "Metano por kg DMI:", "${String.format("%.2f", dieta.metanoPorKgDMI())} g/kg", styles)
+        val ch4_g_dia = dieta.metanoProducidoGramos.coerceAtLeast(0.0)
+        val ch4_g_kgDMI = if (dmi > 0) ch4_g_dia / dmi else 0.0
+        val ch4_g_kgMezcla = if (totalKg > 0) ch4_g_dia / totalKg else 0.0
 
-        sheet.setColumnWidth(0, 8000)
-        sheet.setColumnWidth(1, 6000)
+        createDataRow(sheet, rowNum++, "CH₄ total:", "${String.format("%.2f", ch4_g_dia)} g/día", styles)
+        createDataRow(sheet, rowNum++, "CH₄ por kg DMI:", "${String.format("%.2f", ch4_g_kgDMI)} g/kg", styles)
+        createDataRow(sheet, rowNum++, "CH₄ por kg mezcla:", "${String.format("%.2f", ch4_g_kgMezcla)} g/kg", styles)
+
+        sheet.setColumnWidth(0, 9000)
+        sheet.setColumnWidth(1, 7000)
+
+        // Logs
+        logs += "-- RESUMEN --"
+        logs += "Animal: ${dieta.animal.nombre}, Peso=${dieta.animal.pesoKg} kg, DMI=${dmi} kg/día, Tipo=${dieta.animal.tipo.descripcion}"
+        logs += "Total mezcla: $totalKg kg/día"
+        logs += "Costo mezcla: $${String.format("%.4f", costoPorKg)} /kg"
+        logs += "CH4: total=${String.format("%.2f", ch4_g_dia)} g/día, g/kgDMI=${String.format("%.2f", ch4_g_kgDMI)}, g/kgMezcla=${String.format("%.2f", ch4_g_kgMezcla)}"
     }
 
     private fun createComposicionSheet(
         workbook: Workbook,
         dieta: Dieta,
-        insumos: List<Insumo>,
-        styles: ExcelStyles
+        styles: ExcelStyles,
+        logs: MutableList<String>
     ) {
         val sheet = workbook.createSheet(SHEET_COMPOSICION)
         var rowNum = 0
 
-        // Título
         sheet.createRow(rowNum).apply {
             createCell(0).apply {
-                setCellValue("COMPOSICIÓN DE LA DIETA")
+                setCellValue("COMPOSICIÓN DE LA DIETA (BASE POR KG MEZCLA)")
                 cellStyle = styles.titleStyle
             }
         }
-        sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 4))
+        sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 3))
         rowNum += 2
 
-        // Encabezados
         val headerRow = sheet.createRow(rowNum++)
-        val headers = listOf("Ingrediente", "Cantidad (kg/día)", "Porcentaje (%)", "Costo Unitario ($/kg)", "Costo Total ($/día)")
+        val headers = listOf(
+            "Ingrediente",
+            "Inclusión (kg/kg)",
+            "Participación (%)",
+            "Aporte prorrateado al costo ($/kg)"
+        )
         headers.forEachIndexed { idx, h ->
             headerRow.createCell(idx).apply {
                 setCellValue(h)
@@ -196,47 +283,38 @@ class ExportadorExcel(private val context: Context) {
             }
         }
 
-        val totalKg = dieta.composicion.values.sum()
-        var totalCosto = 0.0
+        val totalKg = totalKgMezcla(dieta)
+        val costoPorKg = dieta.costoPorKgMS().coerceAtLeast(0.0)
+        logs += "-- COMPOSICIÓN --"
+        logs += "Total mezcla: $totalKg kg/día, Costo base: $${String.format("%.4f", costoPorKg)}/kg"
 
         dieta.composicion.entries
             .sortedByDescending { it.value }
-            .forEach { (ingrediente, kg) ->
+            .forEach { (ingrediente, kgDia) ->
                 val row = sheet.createRow(rowNum++)
-
-                // Porcentaje como fracción para usar 0.00%
-                val porcentajeFraccion = if (totalKg > 0.0) kg / totalKg else 0.0
-
-                // Costos
-                val insumo = insumos.find { it.nombre == ingrediente }
-                val costoUnitario = insumo?.costo ?: 0.0
-                val costoIngrediente = kg * costoUnitario
-                totalCosto += costoIngrediente
+                val inclusionKgKg = if (totalKg > 0.0) kgDia / totalKg else 0.0
+                val aporteProrrateado = inclusionKgKg * costoPorKg
 
                 row.createCell(0).setCellValue(ingrediente)
 
                 row.createCell(1).apply {
-                    setCellValue(kg)
+                    setCellValue(inclusionKgKg)
                     cellStyle = styles.numberStyle
                 }
 
                 row.createCell(2).apply {
-                    setCellValue(porcentajeFraccion)     // fracción (ej. 0.27)
-                    cellStyle = styles.percentStyle      // se verá 27.00%
+                    setCellValue(inclusionKgKg) // fracción -> se formatea como %
+                    cellStyle = styles.percentStyle
                 }
 
                 row.createCell(3).apply {
-                    setCellValue(costoUnitario)
+                    setCellValue(aporteProrrateado)
                     cellStyle = styles.currencyStyle
                 }
 
-                row.createCell(4).apply {
-                    setCellValue(costoIngrediente)
-                    cellStyle = styles.currencyStyle
-                }
+                logs += "COMPOS: $ingrediente, kgDia=${String.format("%.4f", kgDia)}, kg/kg=${String.format("%.6f", inclusionKgKg)}, %=${String.format("%.2f", inclusionKgKg * 100)}, costoProrr=$${String.format("%.4f", aporteProrrateado)}"
             }
 
-        // Fila de totales
         val totalRow = sheet.createRow(rowNum++)
         totalRow.createCell(0).apply {
             setCellValue("TOTAL")
@@ -244,366 +322,180 @@ class ExportadorExcel(private val context: Context) {
         }
 
         totalRow.createCell(1).apply {
-            setCellValue(totalKg)
+            setCellValue(if (totalKg > 0.0) 1.0 else 0.0)
             cellStyle = styles.totalNumberStyle
         }
 
         totalRow.createCell(2).apply {
-            setCellValue(if (totalKg > 0.0) 1.0 else 0.0) // 100% como fracción
+            setCellValue(if (totalKg > 0.0) 1.0 else 0.0) // 100%
             cellStyle = styles.totalPercentStyle
         }
 
-        totalRow.createCell(3) // vacío
-
-        totalRow.createCell(4).apply {
-            setCellValue(totalCosto)                 // suma mostrada en la tabla
+        totalRow.createCell(3).apply {
+            setCellValue(costoPorKg) // costo de la mezcla por kg
             cellStyle = styles.totalCurrencyStyle
         }
 
-        // Anchos
         sheet.setColumnWidth(0, 25 * 256)
-        sheet.setColumnWidth(1, 15 * 256)
-        sheet.setColumnWidth(2, 15 * 256)
-        sheet.setColumnWidth(3, 20 * 256)
-        sheet.setColumnWidth(4, 20 * 256)
+        sheet.setColumnWidth(1, 18 * 256)
+        sheet.setColumnWidth(2, 16 * 256)
+        sheet.setColumnWidth(3, 24 * 256)
     }
 
     private fun createNutrientesSheet(
         workbook: Workbook,
         dieta: Dieta,
-        styles: ExcelStyles
+        styles: ExcelStyles,
+        logs: MutableList<String>
     ) {
         val sheet = workbook.createSheet(SHEET_NUTRIENTES)
         var rowNum = 0
 
-        // Título
         sheet.createRow(rowNum).apply {
             createCell(0).apply {
-                setCellValue("APORTE NUTRICIONAL TOTAL")
+                setCellValue("NUTRIENTES (POR KG — UNIDADES NATIVAS)")
                 cellStyle = styles.titleStyle
             }
         }
         sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 2))
         rowNum += 2
 
-        // Encabezados
         val headerRow = sheet.createRow(rowNum++)
-        listOf("Nutriente", "Valor Total", "Unidad").forEachIndexed { index, header ->
+        listOf("Nutriente", "Valor", "Unidad").forEachIndexed { index, header ->
             headerRow.createCell(index).apply {
                 setCellValue(header)
                 cellStyle = styles.tableHeaderStyle
             }
         }
 
-        val nutrientUnits = mapOf(
-            "GE" to "Mcal/día",
-            "CP" to "kg/día",
-            "TDN" to "kg/día",
-            "NEm" to "Mcal/día",
-            "Ca" to "kg/día",
-            "P" to "kg/día",
-            "NDF" to "kg/día",
-            "Starch" to "kg/día",
-            "Fat" to "kg/día"
-        )
+        logs += "-- NUTRIENTES (POR KG, SIN CONVERSIONES) --"
 
         dieta.nutrientesTotales.entries
             .sortedBy { it.key }
             .forEach { (nutriente, valor) ->
+                val unidad = displayUnit(nutriente)
                 val row = sheet.createRow(rowNum++)
                 row.createCell(0).setCellValue(nutriente)
-                row.createCell(1).apply {
-                    setCellValue(valor)
-                    cellStyle = styles.numberStyle
-                }
-                row.createCell(2).setCellValue(nutrientUnits[nutriente] ?: "")
+                row.createCell(1).apply { setCellValue(valor); cellStyle = styles.numberStyle }
+                row.createCell(2).setCellValue(unidad)
+                logs += "RAW: $nutriente = ${String.format("%.4f", valor)} $unidad (por kg)"
             }
 
-        rowNum++ // línea en blanco
-
-        // Requerimientos
-        sheet.createRow(rowNum).apply {
-            createCell(0).apply {
-                setCellValue("REQUERIMIENTOS DEL ANIMAL")
-                cellStyle = styles.headerStyle
-            }
-        }
-        sheet.addMergedRegion(CellRangeAddress(rowNum, rowNum, 0, 2))
-        rowNum++
-
-        // Mínimos
-        sheet.createRow(rowNum++).apply { createCell(0).setCellValue("Mínimos:") }
-        dieta.animal.requerimientosMinimos.forEach { (nutriente, valor) ->
-            val row = sheet.createRow(rowNum++)
-            row.createCell(0).setCellValue("  $nutriente")
-            row.createCell(1).apply {
-                setCellValue(valor)
-                cellStyle = styles.numberStyle
-            }
-            row.createCell(2).setCellValue(getRequirementUnit(nutriente))
-        }
-
-        rowNum++ // línea en blanco
-
-        // Máximos
-        sheet.createRow(rowNum++).apply { createCell(0).setCellValue("Máximos:") }
-        dieta.animal.requerimientosMaximos.forEach { (nutriente, valor) ->
-            val row = sheet.createRow(rowNum++)
-            row.createCell(0).setCellValue("  $nutriente")
-            row.createCell(1).apply {
-                setCellValue(valor)
-                cellStyle = styles.numberStyle
-            }
-            row.createCell(2).setCellValue(getRequirementUnit(nutriente))
-        }
-
-        rowNum++ // línea en blanco
-
-        // ================== COMPARATIVO ==================
-        sheet.createRow(rowNum).apply {
-            createCell(0).apply {
-                setCellValue("COMPARATIVO DIETA vs REQUERIMIENTOS")
-                cellStyle = styles.headerStyle
-            }
-        }
-        sheet.addMergedRegion(CellRangeAddress(rowNum, rowNum, 0, 5))
-        rowNum++
-
-        // Encabezados comparativo
-        val cmpHeader = sheet.createRow(rowNum++)
-        listOf(
-            "Nutriente",
-            "Alcanzado",
-            "Unidad",
-            "Req. mínimo",
-            "Req. máximo",
-            "Cobertura vs Mín",
-            "Estado"
-        ).forEachIndexed { idx, h ->
-            cmpHeader.createCell(idx).apply {
-                setCellValue(h)
-                cellStyle = styles.tableHeaderStyle
-            }
-        }
-
-        val totalMS = dieta.composicion.values.sum()
-
-        // Conjunto de todos los nutrientes que tienen al menos un requerimiento
-        val allReqKeys = (dieta.animal.requerimientosMinimos.keys + dieta.animal.requerimientosMaximos.keys)
-            .toSortedSet()
-
-        allReqKeys.forEach { nutr ->
-            val reqUnit = getRequirementUnit(nutr)
-            val totalValor = dieta.nutrientesTotales[nutr] ?: 0.0
-
-            // Convertimos "alcanzado" a las unidades del requerimiento
-            val (alcanzado, usePercentStyle) = when (reqUnit) {
-                "%" -> {
-                    // kg/día -> %MS (fracción)
-                    val frac = if (totalMS > 0.0) (totalValor / totalMS) else 0.0
-                    frac to true // usar estilo porcentaje
-                }
-                "Mcal/kg" -> {
-                    // Mcal/día -> Mcal/kg
-                    val valPerKg = if (totalMS > 0.0) (totalValor / totalMS) else 0.0
-                    valPerKg to false
-                }
-                else -> {
-                    // Sin conversión; usamos el total como está
-                    totalValor to false
-                }
-            }
-
-            val minReq = dieta.animal.requerimientosMinimos[nutr]
-            val maxReq = dieta.animal.requerimientosMaximos[nutr]
-
-            val estado = when {
-                minReq != null && alcanzado < minReq -> "Bajo"
-                maxReq != null && alcanzado > maxReq -> "Excede"
-                else -> "OK"
-            }
-
-            val row = sheet.createRow(rowNum++)
-            var c = 0
-
-            row.createCell(c++).setCellValue(nutr)
-
-            row.createCell(c).apply {
-                if (usePercentStyle) {
-                    setCellValue(alcanzado)            // fracción
-                    cellStyle = styles.percentStyle
-                } else {
-                    setCellValue(alcanzado)
-                    cellStyle = styles.numberStyle
-                }
-            }
-            c++
-
-            row.createCell(c++).setCellValue(if (reqUnit.isEmpty()) reqUnit else (nutrientUnits[nutr] ?: ""))
-
-            row.createCell(c).apply {
-                if (minReq != null) {
-                    if (reqUnit == "%") {
-                        setCellValue(minReq)          // minReq viene ya en porcentaje absoluto (ej. 12), pero...
-                        // OJO: como mostramos unidad "%", lo correcto es escribir 12.00 sin formato %,
-                        // o bien convertirlo a fracción y usar percentStyle.
-                        // Preferimos percentStyle con fracción:
-                        setCellValue(minReq / 100.0)
-                        cellStyle = styles.percentStyle
-                    } else {
-                        setCellValue(minReq)
-                        cellStyle = styles.numberStyle
-                    }
-                } else setCellValue("-")
-            }
-            c++
-
-            row.createCell(c).apply {
-                if (maxReq != null) {
-                    if (reqUnit == "%") {
-                        setCellValue(maxReq / 100.0)
-                        cellStyle = styles.percentStyle
-                    } else {
-                        setCellValue(maxReq)
-                        cellStyle = styles.numberStyle
-                    }
-                } else setCellValue("-")
-            }
-            c++
-
-            row.createCell(c).apply {
-                if (minReq != null && minReq > 0.0) {
-                    // Cobertura como fracción
-                    val cobertura = if (reqUnit == "%") {
-                        // ambos en fracción: alcanzado(fracción) / (min/100)
-                        alcanzado / (minReq / 100.0)
-                    } else {
-                        alcanzado / minReq
-                    }
-                    setCellValue(cobertura)
-                    cellStyle = styles.percentStyle
-                } else {
-                    setCellValue("-")
-                }
-            }
-            c++
-
-            row.createCell(c).setCellValue(estado)
-        }
-
-        // Ajustes de ancho
         sheet.setColumnWidth(0, 18 * 256)
-        sheet.setColumnWidth(1, 14 * 256)
-        sheet.setColumnWidth(2, 10 * 256)
-        sheet.setColumnWidth(3, 14 * 256)
-        sheet.setColumnWidth(4, 14 * 256)
-        sheet.setColumnWidth(5, 18 * 256)
-        sheet.setColumnWidth(6, 12 * 256)
+        sheet.setColumnWidth(1, 16 * 256)
+        sheet.setColumnWidth(2, 16 * 256)
     }
+
+    private fun displayUnit(nutrient: String): String = when (nutrient) {
+        "CP","NDF","Ca","P","TDN","Starch","Fat" -> "%"
+        "NEm","NEg","GE" -> "Mcal/kg"
+        else -> "g/kg"
+    }
+
+
+    /** Unidad del valor CRUDO almacenado en dieta.nutrientesTotales por convención del proyecto. */
+    private fun getRawUnit(nutrient: String): String {
+        return when {
+            nutrient in setOf("GE", "NEm", "NEg") -> "Mcal/día"
+            nutrient in nutrientsInGrams -> "g/día" // CP, NDF, Ca, P, Starch, Fat, TDN...
+            else -> "u/día" // unidad genérica si no hay convención
+        }
+    }
+
+
 
     private fun createMetanoSheet(
         workbook: Workbook,
         dieta: Dieta,
-        methaneResult: MethaneCalculator.MethaneResult,
-        styles: ExcelStyles
+        styles: ExcelStyles,
+        logs: MutableList<String>
     ) {
         val sheet = workbook.createSheet(SHEET_METANO)
         var rowNum = 0
 
-        // Título
         sheet.createRow(rowNum).apply {
             createCell(0).apply {
-                setCellValue("ANÁLISIS DE METANO ENTÉRICO")
+                setCellValue("ANÁLISIS DE METANO (g/kg DMI)")
                 cellStyle = styles.titleStyle
             }
         }
         sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 2))
         rowNum += 2
 
-        // Info general
-        createDataRow(sheet, rowNum++, "Tipo de dieta:", methaneResult.tipoDieta.descripcion, styles)
-        createDataRow(sheet, rowNum++, "Ecuaciones utilizadas:", "${methaneResult.predictions.size}", styles)
+        val dmi = dieta.animal.consumoDMI.coerceAtLeast(0.0)
+        val totalKg = totalKgMezcla(dieta)
+        val ch4 = dieta.metanoProducidoGramos.coerceAtLeast(0.0)
 
-        rowNum++ // línea en blanco
+        createDataRow(sheet, rowNum++, "Tipo de dieta:", dieta.animal.tipo.descripcion, styles)
+        createDataRow(sheet, rowNum++, "DMI (kg/día):", String.format("%.2f", dmi), styles)
 
-        // Estadísticas
+        rowNum++
+
         sheet.createRow(rowNum).apply {
             createCell(0).apply {
-                setCellValue("ESTADÍSTICAS DE PRODUCCIÓN")
+                setCellValue("MÉTRICAS")
                 cellStyle = styles.headerStyle
             }
         }
         sheet.addMergedRegion(CellRangeAddress(rowNum, rowNum, 0, 2))
         rowNum++
 
-        createDataRow(sheet, rowNum++, "Media:", "${String.format("%.2f", methaneResult.mean)} g/día", styles)
-        createDataRow(sheet, rowNum++, "Mediana:", "${String.format("%.2f", methaneResult.median)} g/día", styles)
-        createDataRow(sheet, rowNum++, "Mínimo:", "${String.format("%.2f", methaneResult.min)} g/día", styles)
-        createDataRow(sheet, rowNum++, "Máximo:", "${String.format("%.2f", methaneResult.max)} g/día", styles)
-        createDataRow(sheet, rowNum++, "Desviación estándar:", "${String.format("%.2f", methaneResult.standardDeviation)} g/día", styles)
-        createDataRow(sheet, rowNum++, "Rango de incertidumbre:", "${String.format("%.2f", methaneResult.getUncertaintyRange())} g/día", styles)
-        createDataRow(sheet, rowNum++, "Coeficiente de variación:", "${String.format("%.1f", methaneResult.getCoefficientOfVariation())}%", styles)
+        fun safeDiv(a: Double, b: Double) = if (b > 0) a / b else 0.0
 
-        rowNum++ // línea en blanco
+        val vTotal = ch4
+        val vKgDMI = safeDiv(ch4, dmi)
+        val vKgMix = safeDiv(ch4, totalKg)
 
-        // Predicciones
-        sheet.createRow(rowNum).apply {
-            createCell(0).apply {
-                setCellValue("PREDICCIONES POR ECUACIÓN")
-                cellStyle = styles.headerStyle
-            }
-        }
-        sheet.addMergedRegion(CellRangeAddress(rowNum, rowNum, 0, 2))
-        rowNum++
-
-        val tableHeader = sheet.createRow(rowNum++)
-        listOf("Ecuación", "Valor", "Unidad").forEachIndexed { index, header ->
-            tableHeader.createCell(index).apply {
-                setCellValue(header)
-                cellStyle = styles.tableHeaderStyle
-            }
-        }
-
-        methaneResult.predictions
-            .sortedByDescending { it.value }
-            .forEach { prediction ->
-                val row = sheet.createRow(rowNum++)
-                row.createCell(0).setCellValue(prediction.equation)
-                row.createCell(1).apply {
-                    setCellValue(prediction.value)
-                    cellStyle = styles.numberStyle
-                }
-                row.createCell(2).setCellValue(prediction.unit)
-            }
-
-        rowNum++ // línea en blanco
-
-        // Interpretación
-        sheet.createRow(rowNum).apply {
-            createCell(0).apply {
-                setCellValue(
-                    buildString {
-                        appendLine("La producción media de metano es de ${String.format("%.2f", methaneResult.mean)} g/día.")
-                        appendLine("El rango de incertidumbre de ${String.format("%.2f", methaneResult.getUncertaintyRange())} g/día indica")
-                        appendLine("la variabilidad entre las diferentes ecuaciones empíricas utilizadas.")
-                        appendLine()
-                        appendLine("Un coeficiente de variación de ${String.format("%.1f", methaneResult.getCoefficientOfVariation())}% " +
-                                when {
-                                    methaneResult.getCoefficientOfVariation() < 10.0 -> "indica alta consistencia entre las predicciones."
-                                    methaneResult.getCoefficientOfVariation() < 20.0 -> "indica consistencia moderada entre las predicciones."
-                                    else -> "indica mayor incertidumbre en las predicciones."
-                                }
-                        )
-                    }
-                )
-                cellStyle = styles.wrapTextStyle
-            }
-        }
-        sheet.addMergedRegion(CellRangeAddress(rowNum, rowNum + 5, 0, 2))
+        createDataRow(sheet, rowNum++, "CH₄ total (g/día):", String.format("%.2f", vTotal), styles)
+        createDataRow(sheet, rowNum++, "CH₄ (g/kg DMI):", String.format("%.2f", vKgDMI), styles)
+        createDataRow(sheet, rowNum++, "CH₄ (g/kg mezcla):", String.format("%.2f", vKgMix), styles)
 
         sheet.setColumnWidth(0, 10000)
         sheet.setColumnWidth(1, 4000)
         sheet.setColumnWidth(2, 3000)
+
+        logs += "-- METANO --"
+        logs += "CH4 total=${String.format("%.2f", vTotal)} g/día, g/kgDMI=${String.format("%.2f", vKgDMI)}, g/kgMezcla=${String.format("%.2f", vKgMix)}"
+    }
+
+    private fun createLogsSheet(
+        workbook: Workbook,
+        styles: ExcelStyles,
+        logs: List<String>
+    ) {
+        val sheet = workbook.createSheet(SHEET_LOGS)
+        var rowNum = 0
+
+        sheet.createRow(rowNum).apply {
+            createCell(0).apply {
+                setCellValue("LOG DE EXPORTACIÓN")
+                cellStyle = styles.titleStyle
+            }
+        }
+        sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 2))
+        rowNum += 2
+
+        val header = sheet.createRow(rowNum++)
+        header.createCell(0).apply {
+            setCellValue("#")
+            cellStyle = styles.tableHeaderStyle
+        }
+        header.createCell(1).apply {
+            setCellValue("Mensaje")
+            cellStyle = styles.tableHeaderStyle
+        }
+
+        logs.forEachIndexed { idx, msg ->
+            val row = sheet.createRow(rowNum++)
+            row.createCell(0).setCellValue((idx + 1).toDouble())
+            row.createCell(1).apply {
+                setCellValue(msg)
+                cellStyle = styles.wrapTextStyle
+            }
+        }
+
+        sheet.setColumnWidth(0, 8 * 256)
+        sheet.setColumnWidth(1, 120 * 256)
     }
 
     // ============= ESTILOS =============
@@ -720,11 +612,11 @@ class ExportadorExcel(private val context: Context) {
         row.createCell(1).setCellValue(value)
     }
 
+    /** Unidades de comparación esperadas por nutriente. */
     private fun getRequirementUnit(nutrient: String): String {
         return when (nutrient) {
-            "CP", "NDF" -> "%"
-            "NEm", "NEg" -> "Mcal/kg"
-            "Ca", "P" -> "%"
+            "CP", "NDF", "Ca", "P", "TDN", "Starch", "Fat" -> "%"
+            "NEm", "NEg", "GE" -> "Mcal/kg"
             else -> ""
         }
     }
@@ -762,6 +654,10 @@ class ExportadorExcel(private val context: Context) {
             val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             File(downloadsDir, fileName).absolutePath
         }
+    }
+
+    private fun dumpLogs(logs: List<String>) {
+        for (line in logs) Log.d(TAG, line)
     }
 
     // ============= CLASES DE DATOS =============

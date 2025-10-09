@@ -190,22 +190,24 @@ class DietAPI {
     private fun calculateTotalNutrients(
         composition: Map<Ingredient, Double>
     ): Map<String, Double> {
-
+        // promedio del mix en UNIDADES NATIVAS (%, Mcal/kg, g/kg, etc.)
         val totals = mutableMapOf<String, Double>()
-        val allNutrientKeys = composition.keys
-            .flatMap { it.nutrients.keys }
-            .distinct()
+        val sumKg = composition.values.sum().coerceAtLeast(0.0)
+        if (sumKg == 0.0) return emptyMap()
 
-        allNutrientKeys.forEach { nutrientKey ->
-            var total = 0.0
-            composition.forEach { (ingredient, kg) ->
-                total += ingredient.getNutrient(nutrientKey) * kg
+        val allKeys = composition.keys.flatMap { it.nutrients.keys }.distinct()
+        allKeys.forEach { k ->
+            var acc = 0.0
+            composition.forEach { (ingredient, kgDia) ->
+                val frac = kgDia / sumKg          // fracción de inclusión (sin cambiar unidades)
+                val v = ingredient.getNutrient(k) // valor nativo del insumo
+                if (v != null) acc += v * frac
             }
-            totals[nutrientKey] = total
+            totals[k] = acc // mismo k, mismas unidades nativas
         }
-
         return totals
     }
+
 
     /**
      * Construye observaciones sobre la dieta
@@ -259,6 +261,8 @@ class DietAPI {
         println("----------------------------------------")
         println("Ingredientes en la dieta: ${dieta.composicion.size}")
         println("╚════════════════════════════════════════╝\n")
+
+        printNutrientSummary(dieta)
     }
 
     /**
@@ -267,5 +271,33 @@ class DietAPI {
     enum class OptimizationMode {
         COST,      // Minimizar costo
         METHANE    // Minimizar metano
+    }
+
+    private fun printNutrientSummary(dieta: Dieta) {
+        println("\n╔════════════════════════════════════════╗")
+        println("║   NUTRIENTES ALCANZADOS (DIETA)        ║")
+        println("╚════════════════════════════════════════╝")
+
+        val dmi = dieta.animal.consumoDMI
+        if (dieta.nutrientesTotales.isEmpty()) {
+            println("No hay nutrientes calculados para esta dieta.")
+            return
+        }
+
+        println(String.format("%-22s %16s %18s", "Nutriente", "Total / día", "Por kg DMI"))
+        println("─".repeat(60))
+
+        dieta.nutrientesTotales.toSortedMap().forEach { (nutriente, totalDia) ->
+            val porKgDmi = if (dmi > 0) totalDia / dmi else Double.NaN
+            println(
+                String.format(
+                    "%-22s %16.3f %18.3f",
+                    nutriente,
+                    totalDia,
+                    porKgDmi
+                )
+            )
+        }
+        println("╚════════════════════════════════════════╝\n")
     }
 }

@@ -33,60 +33,57 @@ class NutritionalComponent : IDietComponent {
         profile: AnimalProfile,
         ingredients: List<Ingredient>
     ) {
-        // 1) Igualdad de DMI
+        // 1) Suma de mezcla = DMI (esto NO convierte unidades, solo fija masa total)
         val dmi = profile.dmiKgDay
         val dmiExpr = model.addExpression("DMI_Total")
         variables.forEach { (_, v) -> dmiExpr.set(v, 1.0) }
-        dmiExpr.lower(dmi)
-        dmiExpr.upper(dmi)
-        println("  → DMI requerido: ${"%.3f".format(dmi)} kg/día")
+        dmiExpr.level(dmi)
+        println("  → DMI requerido (sin conversiones de nutrientes): ${"%.3f".format(dmi)} kg/día")
 
-        // 2) Mínimos (min_*)
+        val PERCENT_NUTRIENTS = setOf("CP", "NDF", "Ca", "P", "Starch", "Fat", "TDN")
+        val ENERGY_NUTRIENTS  = setOf("NEm", "NEg", "GE")
+
+        fun valueOf(ing: Ingredient, k: String) = ing.nutrients[k] ?: 0.0
+
+        // 2) Mínimos (como promedio ponderado del mix, sin conversiones)
         profile.requirements
             .filterKeys { it.startsWith("min_") }
             .forEach { (key, raw) ->
                 val nutrient = key.removePrefix("min_")
-                val expr = model.addExpression("Min_$nutrient")
-
-                variables.forEach { (ingredient, variable) ->
-                    val coef = coeffOf(ingredient, nutrient)
-                    if (abs(coef) > 0.0) expr.set(variable, coef)
-                }
-
-                val rhs = rhsMinFor(nutrient, raw, dmi)
-                expr.lower(rhs)
-
-                if (nutrient in ENERGY_NUTRIENTS) {
-                    println("  → $nutrient mínimo: ${raw} Mcal/kg ⇒ ≥ ${"%.3f".format(rhs)} Mcal/d")
-                } else {
-                    println("  → $nutrient mínimo: ${raw}% ⇒ ≥ ${"%.3f".format(rhs)} kg")
+                if (nutrient in PERCENT_NUTRIENTS || nutrient in ENERGY_NUTRIENTS) {
+                    val expr = model.addExpression("Min_$nutrient")
+                    variables.forEach { (ingredient, v) ->
+                        val vi = valueOf(ingredient, nutrient) // % o Mcal/kg (nativo)
+                        val coef = vi - raw                     // lineal, sin /100 ni ×DMI
+                        if (abs(coef) > 0.0) expr.set(v, coef)
+                    }
+                    expr.lower(0.0)
+                    val unidad = if (nutrient in PERCENT_NUTRIENTS) "%" else "Mcal/kg"
+                    println("  → $nutrient mínimo (sin conversiones): ${raw} $unidad (promedio del mix)")
                 }
             }
 
-        // 3) Máximos (max_*)
+        // 3) Máximos (promedio ponderado del mix, sin conversiones)
         profile.requirements
             .filterKeys { it.startsWith("max_") }
             .forEach { (key, raw) ->
                 val nutrient = key.removePrefix("max_")
-                val expr = model.addExpression("Max_$nutrient")
-
-                variables.forEach { (ingredient, variable) ->
-                    val coef = coeffOf(ingredient, nutrient)
-                    if (abs(coef) > 0.0) expr.set(variable, coef)
-                }
-
-                val rhs = rhsMaxFor(nutrient, raw, dmi)
-                expr.upper(rhs)
-
-                if (nutrient in ENERGY_NUTRIENTS) {
-                    println("  → $nutrient máximo: ${raw} Mcal/kg ⇒ ≤ ${"%.3f".format(rhs)} Mcal/d")
-                } else {
-                    println("  → $nutrient máximo: ${raw}% ⇒ ≤ ${"%.3f".format(rhs)} kg")
+                if (nutrient in PERCENT_NUTRIENTS || nutrient in ENERGY_NUTRIENTS) {
+                    val expr = model.addExpression("Max_$nutrient")
+                    variables.forEach { (ingredient, v) ->
+                        val vi = valueOf(ingredient, nutrient) // % o Mcal/kg (nativo)
+                        val coef = vi - raw
+                        if (abs(coef) > 0.0) expr.set(v, coef)
+                    }
+                    expr.upper(0.0)
+                    val unidad = if (nutrient in PERCENT_NUTRIENTS) "%" else "Mcal/kg"
+                    println("  → $nutrient máximo (sin conversiones): ${raw} $unidad (promedio del mix)")
                 }
             }
 
-        logComponentApplication(profile)
+        println("[${getName()}] Aplicado SIN conversiones de unidades (todo por kg y en unidades nativas).")
     }
+
 
     /** Coeficiente lineal del nutriente en la fila: kg nutriente/kg ingrediente o Mcal/kg */
     private fun coeffOf(ingredient: Ingredient, nutrient: String): Double {

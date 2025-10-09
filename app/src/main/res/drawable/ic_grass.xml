@@ -1,0 +1,10 @@
+<!-- ic_grass.xml - Guardar en res/drawable/ -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/black"
+        android:pathData="M12,20L2,4h4l6,11 2,-11h2l2,11 6,-11h4L18,20h-2l-4,-8 -4,8z"/>
+</vector>
