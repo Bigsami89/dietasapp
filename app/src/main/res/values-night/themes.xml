@@ -90,4 +90,29 @@
         <item name="android:textColor">@color/text_secondary_dark</item>
         <item name="android:textSize">14sp</item>
     </style>
+
+    <style name="TextAppearance.Dietasapp.Headline3" parent="TextAppearance.MaterialComponents.Subtitle1">
+    <item name="android:textColor">@color/text_primary_light</item> <!-- o text_primary_dark en night -->
+    <item name="android:textSize">18sp</item>
+    <item name="android:fontFamily">sans-serif-medium</item>
+</style>
+
+<style name="TextAppearance.Dietasapp.Caption" parent="TextAppearance.MaterialComponents.Caption">
+    <item name="android:textColor">@color/text_secondary_light</item> <!-- o text_secondary_dark en night -->
+    <item name="android:textSize">12sp</item>
+</style>
+
+<style name="Theme.Dietasapp.Dialog.FullScreen" parent="Theme.MaterialComponents.Light.Dialog">
+    <item name="android:windowIsFloating">false</item>
+    <item name="android:windowBackground">?attr/colorSurface</item>
+    <item name="android:statusBarColor">?attr/colorPrimary</item>
+    <item name="android:windowAnimationStyle">@style/Animation.Dietasapp.Dialog</item>
+</style>
+
+<style name="Animation.Dietasapp.Dialog" parent="Animation.MaterialComponents.BottomSheetDialog">
+    <item name="android:windowEnterAnimation">@android:anim/slide_in_left</item>
+    <item name="android:windowExitAnimation">@android:anim/slide_out_right</item>
+</style>
+
+
 </resources>

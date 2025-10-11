@@ -1,5 +1,7 @@
 package com.example.dietasapp.domain
 
+import java.io.Serializable
+
 /**
  * Representa una dieta calculada/formulada
  */
@@ -10,8 +12,10 @@ data class Dieta(
     val metanoProducidoGramos: Double,
     val nutrientesTotales: Map<String, Double>,
     val fechaCreacion: Long = System.currentTimeMillis(),
-    val observaciones: String = ""
-) {
+    val observaciones: String = "",
+    val ingredientesUsados: List<Ingredient> = emptyList() // Lista de ingredientes completos
+) : Serializable {
+
     /**
      * Calcula el costo por kg de materia seca
      */

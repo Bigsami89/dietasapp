@@ -1,5 +1,7 @@
 package com.example.dietasapp.domain
 
+import java.io.Serializable
+
 /**
  * Modelo de dominio para ingredientes usado en el optimizador
  * Corresponde a la clase "Ingredient" del diagrama de ojAlgo
@@ -8,7 +10,9 @@ data class Ingredient(
     val name: String,
     val cost: Double,
     val nutrients: Map<String, Double>
-) {
+) : Serializable {
+
+
     /**
      * Obtiene un nutriente específico
      */
@@ -17,6 +21,8 @@ data class Ingredient(
     }
 
     companion object {
+        private const val serialVersionUID: Long = 1L
+
         /**
          * Convierte un Insumo (capa data) a Ingredient (capa domain)
          */

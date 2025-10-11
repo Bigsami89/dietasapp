@@ -45,4 +45,24 @@
     <color name="card_background_dark">#2C2C2C</color>
     <color name="divider_light">#E0E0E0</color>
     <color name="divider_dark">#3C3C3C</color>
+
+    <color name="accent_green">#4CAF50</color>
+    <color name="accent_orange">#FF9800</color>
+    
+
+    <!-- Colores de estado -->
+    <color name="success_green">#4CAF50</color>
+    <color name="success_bg">#E8F5E9</color>
+    <color name="warning_orange">#FF9800</color>
+    <color name="warning_bg">#FFF3E0</color>
+    <color name="error_red">#F44336</color>
+    <color name="error_bg">#FFEBEE</color>
+    
+    <!-- Colores básicos -->
+
+
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+
+
 </resources>

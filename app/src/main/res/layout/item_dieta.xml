@@ -6,7 +6,10 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    app:cardElevation="4dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,12 +17,13 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Header con animal y fecha -->
+        <!-- Header: Animal y fecha -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -28,76 +32,152 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/tvAnimalDieta"
+                    android:id="@+id/tvNombreAnimal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="@style/TextAppearance.Dietasapp.Headline2"
-                    tools:text="Vaca Lechera #1" />
+                    tools:text="Vaca Lechera Holstein" />
 
                 <TextView
-                    android:id="@+id/tvFechaDieta"
+                    android:id="@+id/tvFechaCreacion"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="@style/TextAppearance.Dietasapp.Body2"
-                    tools:text="06/10/2025 14:30" />
+                    android:textColor="?android:attr/textColorSecondary"
+                    tools:text="10/10/2025 14:30" />
             </LinearLayout>
 
+            <!-- Botón eliminar -->
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnVerDetalles"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/ver_detalles" />
+                android:id="@+id/btnEliminar"
+                style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_delete"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconTint="?attr/colorError" />
         </LinearLayout>
 
-        <!-- Resumen de resultados -->
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginVertical="8dp" />
+
+        <!-- Información resumida -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:layout_marginBottom="12dp">
 
+            <!-- Tipo de optimización -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginEnd="8dp">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_settings"
+                    android:tint="?android:attr/textColorSecondary"
+                    android:layout_marginEnd="8dp" />
 
                 <TextView
+                    android:id="@+id/tvTipoOptimizacion"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Costo"
-                    android:textAppearance="@style/TextAppearance.Dietasapp.Body2" />
-
-                <TextView
-                    android:id="@+id/tvCostoDieta"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
-                    android:textColor="@color/success"
-                    tools:text="$45.50/día" />
+                    android:textAppearance="@style/TextAppearance.Dietasapp.Body2"
+                    tools:text="Minimizar Costo" />
             </LinearLayout>
 
+            <!-- Costo total -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_attach_money"
+                    android:tint="@color/accent_green"
+                    android:layout_marginEnd="8dp" />
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Metano"
-                    android:textAppearance="@style/TextAppearance.Dietasapp.Body2" />
-
-                <TextView
-                    android:id="@+id/tvMetanoDieta"
+                    android:id="@+id/tvCostoTotal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
-                    android:textColor="@color/info"
-                    tools:text="245.8 g/día" />
+                    android:textColor="@color/accent_green"
+                    tools:text="$125.50 MXN/día" />
+            </LinearLayout>
+
+            <!-- Emisiones de metano -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_eco"
+                    android:tint="@color/accent_blue"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/tvMetanoTotal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Dietasapp.Body2"
+                    tools:text="245.3 g CH₄/día" />
+            </LinearLayout>
+
+            <!-- Número de ingredientes -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_grass"
+                    android:tint="?android:attr/textColorSecondary"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/tvNumIngredientes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Dietasapp.Body2"
+                    tools:text="5 ingredientes" />
             </LinearLayout>
         </LinearLayout>
+
+        <!-- Botón Ver Detalles -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVerDetalles"
+            style="@style/Widget.Dietasapp.Button.Outlined"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/ver_detalles"
+            app:icon="@drawable/ic_arrow_forward"
+            app:iconGravity="end" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

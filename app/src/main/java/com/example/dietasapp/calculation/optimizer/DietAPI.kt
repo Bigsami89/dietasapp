@@ -78,7 +78,7 @@ class DietAPI {
             metanoProducidoGramos = methaneResult.mean,
             nutrientesTotales = nutrientesTotales,
             observaciones = buildObservations(methaneResult, dietResult)
-        )
+            )
 
         // 8. Mostrar resumen final
         printFinalSummary(dieta, methaneResult)

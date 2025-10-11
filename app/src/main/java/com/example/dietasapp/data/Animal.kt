@@ -1,5 +1,7 @@
 package com.example.dietasapp.data
 
+import java.io.Serializable
+
 /**
  * Representa un animal en el sistema de inventario
  * Corresponde a la estructura JSON "animal_requirements"
@@ -11,9 +13,11 @@ data class Animal(
     val pesoKg: Double,  // body_weight_kg
     val consumoDMI: Double,  // DMI_kg_day
     val requerimientosMinimos: Map<String, Double>,  // min_requirements
-    val requerimientosMaximos: Map<String, Double>   // max_requirements
-) {
+    val requerimientosMaximos: Map<String, Double>,   // max_requirements
+) : Serializable {
+
     companion object {
+        private const val serialVersionUID: Long = 1L
         // Claves estándar para los requerimientos
         const val CP = "CP"           // Proteína Cruda
         const val NEM = "NEm"         // Energía Neta Mantenimiento

@@ -148,4 +148,41 @@
     <string name="alto_forraje">Alto Forraje</string>
     <string name="intermedio">Intermedio</string>
     <string name="bajo_forraje">Bajo Forraje</string>
+
+
+    
+    <!-- Historial - Nuevos strings -->
+    <string name="error_cargar_historial">Error al cargar el historial</string>
+    <string name="dieta_eliminada">Dieta eliminada exitosamente</string>
+    <string name="error_eliminar_dieta">Error al eliminar la dieta</string>
+    <string name="confirmar_eliminar_dieta">¿Estás seguro de que deseas eliminar esta dieta?</string>
+    <string name="detalles_dieta">Detalles de la Dieta</string>
+    <string name="ingredientes_count">%d ingredientes</string>
+
+    <!-- Dialog detalles -->
+    <string name="informacion_general">Información General</string>
+    <string name="animal">Animal</string>
+    <string name="fecha">Fecha</string>
+    <string name="resumen_economico">Resumen Económico</string>
+    <string name="costo_total_diario">Costo Total Diario</string>
+    <string name="emisiones_metano">Emisiones de Metano</string>
+    <string name="requerimientos_animal">Requerimientos del Animal</string>
+    <string name="peso">Peso</string>
+    <string name="produccion_leche">Producción de Leche</string>
+    <string name="ganancia_peso">Ganancia de Peso</string>
+    <string name="no_aplica">N/A</string>
+
+    <!-- Formatos -->
+    <string name="formato_peso">%.0f kg</string>
+    <string name="formato_kg">%.2f kg</string>
+
+    <string name="formato_energia">%.2f Mcal</string>
+    <string name="formato_metano">%.1f g CH₄/día</string>
+
+
+    <!-- Nutrientes -->
+    <string name="materia_seca">Materia Seca</string>
+    <string name="proteina_cruda">Proteína Cruda</string>
+    <string name="energia_neta">Energía Neta</string>
+    <string name="fibra_fdn">Fibra (FDN)</string>
 </resources>
