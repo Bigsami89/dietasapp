@@ -1,6 +1,5 @@
 package com.example.dietasapp.ui.inventory
 
-import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,14 +15,14 @@ import com.example.dietasapp.database.CatalogManager
 import com.example.dietasapp.databinding.TabAnimalesBinding
 import com.example.dietasapp.inventory.Inventario
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
  * Fragmento del tab de Insumos
- * Permite agregar insumos desde catálogo o manualmente
+ * Permite agregar y editar insumos desde catálogo o manualmente
  */
 class InsumosTabFragment : Fragment() {
 
@@ -57,7 +56,7 @@ class InsumosTabFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = InsumoAdapter(
             onEditClick = { insumo ->
-                Toast.makeText(requireContext(), "Editar: ${insumo.nombre}", Toast.LENGTH_SHORT).show()
+                showEditDialog(insumo)
             },
             onDeleteClick = { insumo ->
                 confirmarEliminar(insumo)
@@ -93,6 +92,110 @@ class InsumosTabFragment : Fragment() {
         }
     }
 
+    /**
+     * Muestra el diálogo para editar un insumo existente
+     */
+    private fun showEditDialog(insumo: Insumo) {
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_insumo, null)
+
+        // Referencias a los campos
+        val etNombre = dialogView.findViewById<TextInputEditText>(R.id.etNombre)
+        val etCosto = dialogView.findViewById<TextInputEditText>(R.id.etCosto)
+        val switchForraje = dialogView.findViewById<SwitchMaterial>(R.id.switchForraje)
+
+        // Nutrientes
+        val etGE = dialogView.findViewById<TextInputEditText>(R.id.etGE)
+        val etCP = dialogView.findViewById<TextInputEditText>(R.id.etCP)
+        val etTDN = dialogView.findViewById<TextInputEditText>(R.id.etTDN)
+        val etNEm = dialogView.findViewById<TextInputEditText>(R.id.etNEm)
+        val etCa = dialogView.findViewById<TextInputEditText>(R.id.etCa)
+        val etP = dialogView.findViewById<TextInputEditText>(R.id.etP)
+        val etNDF = dialogView.findViewById<TextInputEditText>(R.id.etNDF)
+        val etStarch = dialogView.findViewById<TextInputEditText>(R.id.etStarch)
+        val etFat = dialogView.findViewById<TextInputEditText>(R.id.etFat)
+
+        // Establecer valores actuales
+        etNombre.setText(insumo.nombre)
+        etCosto.setText(insumo.costo.toString())
+        switchForraje.isChecked = insumo.esForraje
+
+        // Cargar nutrientes
+        etGE.setText(insumo.getNutriente(Insumo.GE).toString())
+        etCP.setText(insumo.getNutriente(Insumo.CP).toString())
+        etTDN.setText(insumo.getNutriente(Insumo.TDN).toString())
+        etNEm.setText(insumo.getNutriente(Insumo.NEM).toString())
+        etCa.setText(insumo.getNutriente(Insumo.CA).toString())
+        etP.setText(insumo.getNutriente(Insumo.P).toString())
+        etNDF.setText(insumo.getNutriente(Insumo.NDF).toString())
+        etStarch.setText(insumo.getNutriente(Insumo.STARCH).toString())
+        etFat.setText(insumo.getNutriente(Insumo.FAT).toString())
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.guardar)) { _, _ ->
+                // Validar campos obligatorios
+                val nombre = etNombre.text.toString().trim()
+                val costoStr = etCosto.text.toString().trim()
+
+                if (nombre.isEmpty() || costoStr.isEmpty()) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.error_campos_vacios),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
+
+                val costo = costoStr.toDoubleOrNull() ?: 0.0
+                val esForraje = switchForraje.isChecked
+
+                // Crear mapa de nutrientes
+                val nutrientes = mutableMapOf<String, Double>()
+
+                etGE.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.GE] = it
+                }
+                etCP.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.CP] = it
+                }
+                etTDN.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.TDN] = it
+                }
+                etNEm.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.NEM] = it
+                }
+                etCa.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.CA] = it
+                }
+                etP.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.P] = it
+                }
+                etNDF.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.NDF] = it
+                }
+                etStarch.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.STARCH] = it
+                }
+                etFat.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.FAT] = it
+                }
+
+                // Crear insumo actualizado (mantener el mismo ID)
+                val insumoActualizado = Insumo(
+                    id = insumo.id,
+                    nombre = nombre,
+                    costo = costo,
+                    esForraje = esForraje,
+                    nutrientes = nutrientes
+                )
+
+                guardarInsumo(insumoActualizado)
+            }
+            .setNegativeButton(getString(R.string.cancelar), null)
+            .show()
+    }
+
     fun showAddDialog() {
         // Mostrar opciones: Catálogo o Manual
         MaterialAlertDialogBuilder(requireContext())
@@ -102,13 +205,98 @@ class InsumosTabFragment : Fragment() {
                 showCatalogDialog()
             }
             .setNegativeButton("Manual") { _, _ ->
-                Toast.makeText(
-                    requireContext(),
-                    "Agregar insumo manual - En desarrollo",
-                    Toast.LENGTH_SHORT
-                ).show()
+                showManualAddDialog()
             }
             .setNeutralButton("Cancelar", null)
+            .show()
+    }
+
+    /**
+     * Muestra el diálogo para agregar un insumo manualmente
+     */
+    private fun showManualAddDialog() {
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_insumo, null)
+
+        // Referencias a los campos
+        val etNombre = dialogView.findViewById<TextInputEditText>(R.id.etNombre)
+        val etCosto = dialogView.findViewById<TextInputEditText>(R.id.etCosto)
+        val switchForraje = dialogView.findViewById<SwitchMaterial>(R.id.switchForraje)
+
+        // Nutrientes
+        val etGE = dialogView.findViewById<TextInputEditText>(R.id.etGE)
+        val etCP = dialogView.findViewById<TextInputEditText>(R.id.etCP)
+        val etTDN = dialogView.findViewById<TextInputEditText>(R.id.etTDN)
+        val etNEm = dialogView.findViewById<TextInputEditText>(R.id.etNEm)
+        val etCa = dialogView.findViewById<TextInputEditText>(R.id.etCa)
+        val etP = dialogView.findViewById<TextInputEditText>(R.id.etP)
+        val etNDF = dialogView.findViewById<TextInputEditText>(R.id.etNDF)
+        val etStarch = dialogView.findViewById<TextInputEditText>(R.id.etStarch)
+        val etFat = dialogView.findViewById<TextInputEditText>(R.id.etFat)
+
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.guardar)) { _, _ ->
+                // Validar campos obligatorios
+                val nombre = etNombre.text.toString().trim()
+                val costoStr = etCosto.text.toString().trim()
+
+                if (nombre.isEmpty() || costoStr.isEmpty()) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.error_campos_vacios),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
+
+                val costo = costoStr.toDoubleOrNull() ?: 0.0
+                val esForraje = switchForraje.isChecked
+
+                // Crear mapa de nutrientes
+                val nutrientes = mutableMapOf<String, Double>()
+
+                etGE.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.GE] = it
+                }
+                etCP.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.CP] = it
+                }
+                etTDN.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.TDN] = it
+                }
+                etNEm.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.NEM] = it
+                }
+                etCa.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.CA] = it
+                }
+                etP.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.P] = it
+                }
+                etNDF.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.NDF] = it
+                }
+                etStarch.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.STARCH] = it
+                }
+                etFat.text.toString().toDoubleOrNull()?.let {
+                    nutrientes[Insumo.FAT] = it
+                }
+
+                // Crear nuevo insumo con ID único
+                val nuevoInsumo = Insumo(
+                    id = UUID.randomUUID().toString(),
+                    nombre = nombre,
+                    costo = costo,
+                    esForraje = esForraje,
+                    nutrientes = nutrientes
+                )
+
+                guardarInsumo(nuevoInsumo)
+            }
+            .setNegativeButton(getString(R.string.cancelar), null)
             .show()
     }
 
@@ -146,7 +334,6 @@ class InsumosTabFragment : Fragment() {
 
                 // Verificar que no sea un header de categoría
                 if (!opciones[which].startsWith("---")) {
-                    // Mostrar diálogo para confirmar y opcionalmente agregar al stock
                     showAddToInventoryDialog(selectedInsumo)
                 }
             }
@@ -245,11 +432,11 @@ class InsumosTabFragment : Fragment() {
     private fun confirmarEliminar(insumo: Insumo) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.eliminar))
-            .setMessage(getString(R.string.confirmar_eliminar_insumo))
-            .setPositiveButton(getString(R.string.si)) { _, _ ->
+            .setMessage("¿Estás seguro de que deseas eliminar ${insumo.nombre}?")
+            .setPositiveButton(getString(R.string.eliminar)) { _, _ ->
                 eliminarInsumo(insumo)
             }
-            .setNegativeButton(getString(R.string.no), null)
+            .setNegativeButton(getString(R.string.cancelar), null)
             .show()
     }
 
@@ -261,7 +448,7 @@ class InsumosTabFragment : Fragment() {
                 if (exito) {
                     Toast.makeText(
                         requireContext(),
-                        getString(R.string.insumo_eliminado),
+                        "Insumo eliminado exitosamente",
                         Toast.LENGTH_SHORT
                     ).show()
                     cargarInsumos()

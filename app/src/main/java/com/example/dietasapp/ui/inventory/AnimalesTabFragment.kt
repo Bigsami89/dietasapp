@@ -133,7 +133,6 @@ class AnimalesTabFragment : Fragment() {
 
         // Si es edición, llenar campos
         animal?.let {
-            dialogBinding.tvTitulo.text = getString(R.string.editar_animal)
             dialogBinding.etNombre.setText(it.nombre)
             dialogBinding.etPeso.setText(it.pesoKg.toString())
             dialogBinding.etDMI.setText(it.consumoDMI.toString())

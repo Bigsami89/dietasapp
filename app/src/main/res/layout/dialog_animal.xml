@@ -12,13 +12,6 @@
         android:padding="24dp">
 
         <!-- Título -->
-        <TextView
-            android:id="@+id/tvTitulo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/agregar_animal"
-            android:textAppearance="@style/TextAppearance.Dietasapp.Headline1"
-            android:layout_marginBottom="24dp" />
 
         <!-- Nombre -->
         <com.google.android.material.textfield.TextInputLayout

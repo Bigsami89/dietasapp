@@ -14,13 +14,6 @@
         android:padding="16dp">
 
         <!-- Título -->
-        <TextView
-            android:id="@+id/titulo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/calcular_dieta_titulo"
-            android:textAppearance="@style/TextAppearance.Dietasapp.Headline1"
-            android:layout_marginBottom="24dp" />
 
         <!-- Card: Selección de Animal -->
         <com.google.android.material.card.MaterialCardView
