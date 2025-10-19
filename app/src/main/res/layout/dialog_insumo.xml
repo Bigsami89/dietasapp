@@ -11,23 +11,23 @@
         android:orientation="vertical"
         android:padding="24dp">
 
-        <!-- Título -->
-
-        <!-- Información Básica -->
+        <!-- ============================================ -->
+        <!-- SECCIÓN: INFORMACIÓN BÁSICA -->
+        <!-- ============================================ -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Información Básica"
-            android:textAppearance="@style/TextAppearance.Dietasapp.Headline2"
+            android:textSize="18sp"
+            android:textStyle="bold"
             android:layout_marginBottom="12dp" />
 
         <!-- Nombre del Insumo -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilNombre"
-            style="@style/Widget.Dietasapp.TextInputLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/nombre_insumo"
+            android:hint="Nombre del Insumo"
             android:layout_marginBottom="12dp">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -43,17 +43,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="12dp">
 
-            <!-- Costo por kg -->
+            <!-- Costo (MXN/kg) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilCosto"
-                style="@style/Widget.Dietasapp.TextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:hint="Costo ($/kg)"
+                android:hint="Costo (MXN/kg)"
                 app:prefixText="$">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -76,8 +75,8 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/es_forraje"
-                    android:textAppearance="@style/TextAppearance.Dietasapp.Caption"
+                    android:text="Es Forraje"
+                    android:textSize="12sp"
                     android:layout_marginBottom="4dp" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
@@ -88,130 +87,197 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Restricciones de Inclusión -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <!-- Inclusión Mínima (%) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilInclusionMinima"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="Inclusión Mínima (%)"
+                app:suffixText="%"
+                app:helperText="% mínimo en ración">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etInclusionMinima"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:text="0"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Inclusión Máxima (%) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilInclusionMaxima"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Inclusión Máxima (%)"
+                app:suffixText="%"
+                app:helperText="% máximo en ración">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etInclusionMaxima"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:text="100"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
         <!-- Separador -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="?android:attr/listDivider"
+            android:background="@android:color/darker_gray"
             android:layout_marginVertical="16dp" />
 
-        <!-- Nutrientes -->
+        <!-- ============================================ -->
+        <!-- SECCIÓN: ENERGÍA (MJ/kg MS) -->
+        <!-- ============================================ -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/nutrientes"
-            android:textAppearance="@style/TextAppearance.Dietasapp.Headline2"
+            android:text="Energía (MJ/kg MS)"
+            android:textSize="18sp"
+            android:textStyle="bold"
             android:layout_marginBottom="12dp" />
 
-        <!-- GE - Energía Bruta (Mcal/kg) -->
+        <!-- Energía Bruta -->
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilGE"
-            style="@style/Widget.Dietasapp.TextInputLayout"
+            android:id="@+id/tilEnergiaBruta"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Energía Bruta - GE (Mcal/kg)"
+            android:hint="Energía Bruta (EB)"
+            app:suffixText="MJ/kg MS"
             android:layout_marginBottom="12dp">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etGE"
+                android:id="@+id/etEnergiaBruta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- CP - Proteína Cruda (%) -->
+        <!-- Energía Metabolizable (PRIORITARIO) -->
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilCP"
-            style="@style/Widget.Dietasapp.TextInputLayout"
+            android:id="@+id/tilEnergiaMetabolizable"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Proteína Cruda - CP (%)"
+            android:hint="⭐ Energía Metabolizable (EM) - PRIORITARIO"
+            app:suffixText="MJ/kg MS"
+            app:helperText="Campo más importante para cálculos"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEnergiaMetabolizable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Energía Neta Mantenimiento -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilEnergiaNetaMantenimiento"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Energía Neta Mantenimiento (ENm)"
+            app:suffixText="MJ/kg MS"
+            app:helperText="Para mantenimiento corporal"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEnergiaNetaMantenimiento"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Separador -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_marginVertical="16dp" />
+
+        <!-- ============================================ -->
+        <!-- SECCIÓN: COMPOSICIÓN NUTRICIONAL (%) -->
+        <!-- ============================================ -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Composición Nutricional"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Proteína Cruda (PC) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilProteinaCruda"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Proteína Cruda (PC)"
             app:suffixText="%"
             android:layout_marginBottom="12dp">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etCP"
+                android:id="@+id/etProteinaCruda"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- TDN - Total Digestible Nutrients (%) -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilTDN"
-            style="@style/Widget.Dietasapp.TextInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="TDN - Nutrientes Digestibles Totales (%)"
-            app:suffixText="%"
-            android:layout_marginBottom="12dp">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etTDN"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- NEm - Energía Neta Mantenimiento (Mcal/kg) -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilNEm"
-            style="@style/Widget.Dietasapp.TextInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Energía Neta Mantenimiento - NEm (Mcal/kg)"
-            android:layout_marginBottom="12dp">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etNEm"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Fila: Ca y P -->
+        <!-- Fila: FDN y FDA -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="12dp">
 
-            <!-- Ca - Calcio (%) -->
+            <!-- Fibra Detergente Neutra (FDN) -->
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilCa"
-                style="@style/Widget.Dietasapp.TextInputLayout"
+                android:id="@+id/tilFDN"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:hint="Calcio - Ca (%)"
+                android:hint="FDN - Fibra Total"
                 app:suffixText="%">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etCa"
+                    android:id="@+id/etFDN"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="numberDecimal"
                     android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- P - Fósforo (%) -->
+            <!-- Fibra Detergente Ácida (FDA) -->
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilP"
-                style="@style/Widget.Dietasapp.TextInputLayout"
+                android:id="@+id/tilFDA"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:hint="Fósforo - P (%)"
+                android:hint="FDA - Fibra Ácida"
                 app:suffixText="%">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etP"
+                    android:id="@+id/etFDA"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="numberDecimal"
@@ -219,63 +285,331 @@
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
-        <!-- NDF - Fibra Detergente Neutro (%) -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilNDF"
-            style="@style/Widget.Dietasapp.TextInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Fibra Detergente Neutro - NDF (%)"
-            app:suffixText="%"
-            android:layout_marginBottom="12dp">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etNDF"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Fila: Starch y Fat -->
+        <!-- Fila: Extracto Etéreo y Cenizas -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="12dp">
 
-            <!-- Starch - Almidón (%) -->
+            <!-- Extracto Etéreo (EE) - Grasa -->
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilStarch"
-                style="@style/Widget.Dietasapp.TextInputLayout"
+                android:id="@+id/tilExtractoEtereo"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:hint="Almidón - Starch (%)"
+                android:hint="EE - Grasa"
                 app:suffixText="%">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etStarch"
+                    android:id="@+id/etExtractoEtereo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="numberDecimal"
                     android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Fat - Grasa/Extracto Etéreo (%) -->
+            <!-- Cenizas -->
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilFat"
-                style="@style/Widget.Dietasapp.TextInputLayout"
+                android:id="@+id/tilCenizas"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:hint="Grasa - Fat (%)"
+                android:hint="Cenizas"
                 app:suffixText="%">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etFat"
+                    android:id="@+id/etCenizas"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Fila: Degradabilidad Ruminal y Metano -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <!-- Degradabilidad Ruminal -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilDegradabilidadRuminal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="Degradabilidad Ruminal"
+                app:suffixText="%"
+                app:helperText="% degradado en rumen">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDegradabilidadRuminal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Metano Producido -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilMetanoProducido"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Metano (CH₄)"
+                app:suffixText="g/kg MS"
+                app:helperText="Ej: 18.07 para pastos">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etMetanoProducido"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Separador -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray"
+            android:layout_marginVertical="16dp" />
+
+        <!-- ============================================ -->
+        <!-- SECCIÓN: MINERALES -->
+        <!-- ============================================ -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Minerales"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Macrominerales (g/kg)"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Fila: Calcio y Fósforo -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilCalcio"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="Calcio (Ca)"
+                app:suffixText="g/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCalcio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilFosforo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Fósforo (P)"
+                app:suffixText="g/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etFosforo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Fila: Magnesio y Sodio -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilMagnesio"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="Magnesio (Mg)"
+                app:suffixText="g/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etMagnesio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilSodio"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Sodio (Na)"
+                app:suffixText="g/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSodio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Fila: Potasio y Azufre -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPotasio"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="Potasio (K)"
+                app:suffixText="g/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPotasio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilAzufre"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Azufre (S)"
+                app:suffixText="g/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etAzufre"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Microminerales (mg/kg)"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Fila: Cobre y Zinc -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilCobre"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="Cobre (Cu)"
+                app:suffixText="mg/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCobre"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilZinc"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Zinc (Zn)"
+                app:suffixText="mg/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etZinc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Fila: Selenio y Cobalto -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilSelenio"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="Selenio (Se)"
+                app:suffixText="mg/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSelenio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal"
+                    android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilCobalto"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Cobalto (Co)"
+                app:suffixText="mg/kg">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCobalto"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="numberDecimal"

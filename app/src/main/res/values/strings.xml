@@ -182,7 +182,122 @@
 
     <!-- Nutrientes -->
     <string name="materia_seca">Materia Seca</string>
-    <string name="proteina_cruda">Proteína Cruda</string>
+
     <string name="energia_neta">Energía Neta</string>
     <string name="fibra_fdn">Fibra (FDN)</string>
+
+    <!-- Etiquetas de campos del formulario de insumos -->
+
+    <string name="nutrientes_principales">Nutrientes principales</string>
+    <string name="costo">Costo</string>
+
+    
+    <!-- Iconos -->
+    <string name="icono_insumo">Icono del insumo</string>
+    
+    <!-- Secciones del formulario -->
+    <string name="informacion_basica">Información Básica</string>
+    <string name="energia_seccion">Energía (MJ/kg MS)</string>
+    <string name="composicion_nutricional">Composición Nutricional</string>
+    <string name="minerales_seccion">Minerales</string>
+    <string name="macrominerales">Macrominerales (g/kg)</string>
+    <string name="microminerales">Microminerales (mg/kg)</string>
+    <string name="restricciones_inclusion">Restricciones de Inclusión</string>
+    
+    <!-- Campos de energía -->
+    <string name="energia_bruta">Energía Bruta (EB)</string>
+    <string name="energia_metabolizable">⭐ Energía Metabolizable (EM) - PRIORITARIO</string>
+    <string name="energia_neta_mantenimiento">Energía Neta Mantenimiento (ENm)</string>
+    <string name="campo_prioritario">Campo más importante para cálculos</string>
+    
+    <!-- Campos de composición nutricional -->
+    <string name="proteina_cruda">Proteína Cruda (PC)</string>
+    <string name="fdn">FDN - Fibra Total</string>
+    <string name="fda">FDA - Fibra Ácida</string>
+    <string name="extracto_etereo">EE - Grasa</string>
+    <string name="cenizas">Cenizas</string>
+    <string name="degradabilidad_ruminal">Degradabilidad Ruminal</string>
+
+    <string name="porcentaje_degradado_rumen">% degradado en rumen</string>
+    <string name="ejemplo_pastos">Ej: 18.07 para pastos</string>
+    
+    <!-- Campos de minerales -->
+    <string name="calcio">Calcio (Ca)</string>
+    <string name="fosforo">Fósforo (P)</string>
+    <string name="magnesio">Magnesio (Mg)</string>
+    <string name="sodio">Sodio (Na)</string>
+    <string name="potasio">Potasio (K)</string>
+    <string name="azufre">Azufre (S)</string>
+    <string name="cobre">Cobre (Cu)</string>
+    <string name="zinc">Zinc (Zn)</string>
+    <string name="selenio">Selenio (Se)</string>
+    <string name="cobalto">Cobalto (Co)</string>
+    
+    <!-- Restricciones -->
+    <string name="inclusion_minima">Inclusión Mínima</string>
+    <string name="inclusion_maxima">Inclusión Máxima</string>
+    <string name="porcentaje_minimo_racion">% mínimo en ración</string>
+    <string name="porcentaje_maximo_racion">% máximo en ración</string>
+    
+    <!-- Unidades -->
+    <string name="unidad_mj_kg_ms">MJ/kg MS</string>
+    <string name="unidad_porcentaje">%</string>
+    <string name="unidad_g_kg_ms">g/kg MS</string>
+    <string name="unidad_g_kg">g/kg</string>
+    <string name="unidad_mg_kg">mg/kg</string>
+    <string name="unidad_mxn_kg">MXN/kg</string>
+    
+    <!-- Mensajes -->
+    <string name="insumo_guardado_exitosamente">Insumo guardado exitosamente</string>
+
+    <string name="restricciones_invalidas">Restricciones de inclusión inválidas</string>
+    <string name="validacion_restricciones">La inclusión mínima debe ser menor o igual a la máxima</string>
+    
+    <!-- Diálogos -->
+
+    <string name="eliminar_insumo">Eliminar Insumo</string>
+    <string name="nuevo_insumo">Nuevo Insumo</string>
+    <string name="como_agregar_insumo">¿Cómo deseas agregar el insumo?</string>
+    <string name="desde_catalogo">Desde Catálogo</string>
+    <string name="manual">Manual</string>
+    <string name="seleccionar_catalogo">Seleccionar Insumo del Catálogo</string>
+    <string name="agregar_con_stock">Agregar con Stock</string>
+    <string name="solo_agregar">Solo Agregar</string>
+    <string name="deseas_agregar_stock">¿Deseas agregar también al stock?</string>
+    
+    <!-- Tabs de inventario -->
+
+    
+    <!-- Categorías del catálogo -->
+    <string name="categoria_forrajes">FORRAJES</string>
+    <string name="categoria_concentrados">CONCENTRADOS</string>
+    <string name="categoria_proteicos">SUPLEMENTOS PROTEICOS</string>
+    <string name="categoria_subproductos">SUBPRODUCTOS</string>
+    
+    <!-- Información adicional -->
+    <string name="datos_feedipedia">Datos basados en Feedipedia</string>
+    <string name="contexto_mexicano">Adaptado para contexto mexicano</string>
+    <string name="valores_referencia">Valores de referencia</string>
+    
+    <!-- Vista vacía -->
+    <string name="agregar_primer_insumo">Presiona el botón + para agregar tu primer insumo</string>
+    
+    <!-- Ayuda y tooltips -->
+    <string name="ayuda_energia_metabolizable">La Energía Metabolizable es el valor más importante para los cálculos de formulación de raciones</string>
+    <string name="ayuda_restricciones_inclusion">Define los límites mínimo y máximo de este insumo en la ración total</string>
+    <string name="ayuda_metano">Producción estimada de metano entérico en gramos por kg de materia seca</string>
+    <string name="ayuda_degradabilidad_ruminal">Porcentaje del insumo que se degrada en el rumen</string>
+    
+    <!-- Validaciones específicas -->
+    <string name="error_energia_metabolizable_requerida">La Energía Metabolizable es un campo prioritario</string>
+    <string name="error_inclusion_fuera_rango">Los valores de inclusión deben estar entre 0 y 100</string>
+    <string name="warning_restricciones_estrictas">Restricciones muy estrictas pueden dificultar la formulación</string>
+    
+    <!-- Información nutricional en lista -->
+    <string name="formato_nutrientes_rumiantes">PC: %.1f%% • EM: %.1f MJ/kg • FDN: %.1f%%</string>
+    <string name="formato_inclusion">Inclusión: %.1f%% - %.1f%%</string>
+    <string name="sin_restricciones">Sin restricciones</string>
+
+
+
 </resources>

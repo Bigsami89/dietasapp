@@ -10,9 +10,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.dietasapp.R
 import com.example.dietasapp.data.Insumo
+import com.example.dietasapp.data.InventarioItem
 import com.example.dietasapp.database.BaseDeDatosJSON
 import com.example.dietasapp.database.CatalogManager
-import com.example.dietasapp.databinding.TabAnimalesBinding
+import com.example.dietasapp.databinding.TabInsumosBinding
 import com.example.dietasapp.inventory.Inventario
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.switchmaterial.SwitchMaterial
@@ -21,12 +22,12 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
- * Fragmento del tab de Insumos
+ * Fragmento del tab de Insumos para formulación de raciones de rumiantes
  * Permite agregar y editar insumos desde catálogo o manualmente
  */
 class InsumosTabFragment : Fragment() {
 
-    private var _binding: TabAnimalesBinding? = null
+    private var _binding: TabInsumosBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var inventario: Inventario
@@ -38,7 +39,7 @@ class InsumosTabFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = TabAnimalesBinding.inflate(inflater, container, false)
+        _binding = TabInsumosBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -50,38 +51,28 @@ class InsumosTabFragment : Fragment() {
         catalogManager = CatalogManager(requireContext())
 
         setupRecyclerView()
-        cargarInsumos()
+        loadData()
     }
 
     private fun setupRecyclerView() {
         adapter = InsumoAdapter(
-            onEditClick = { insumo ->
-                showEditDialog(insumo)
-            },
-            onDeleteClick = { insumo ->
-                confirmarEliminar(insumo)
-            }
+            onEdit = { insumo -> showEditDialog(insumo) },
+            onDelete = { insumo -> confirmDelete(insumo) }
         )
 
-        binding.recyclerAnimales.apply {
+        binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@InsumosTabFragment.adapter
         }
     }
 
-    private fun cargarInsumos() {
+    private fun loadData() {
         lifecycleScope.launch {
             try {
                 val insumos = inventario.obtenerInsumos()
+                adapter.submitList(insumos)
 
-                if (insumos.isEmpty()) {
-                    binding.emptyStateAnimales.visibility = View.VISIBLE
-                    binding.recyclerAnimales.visibility = View.GONE
-                } else {
-                    binding.emptyStateAnimales.visibility = View.GONE
-                    binding.recyclerAnimales.visibility = View.VISIBLE
-                    adapter.submitList(insumos)
-                }
+                binding.emptyView.visibility = if (insumos.isEmpty()) View.VISIBLE else View.GONE
             } catch (e: Exception) {
                 Toast.makeText(
                     requireContext(),
@@ -93,111 +84,9 @@ class InsumosTabFragment : Fragment() {
     }
 
     /**
-     * Muestra el diálogo para editar un insumo existente
+     * Muestra el diálogo para agregar un nuevo insumo
      */
-    private fun showEditDialog(insumo: Insumo) {
-        val dialogView = LayoutInflater.from(requireContext())
-            .inflate(R.layout.dialog_insumo, null)
-
-        // Referencias a los campos
-        val etNombre = dialogView.findViewById<TextInputEditText>(R.id.etNombre)
-        val etCosto = dialogView.findViewById<TextInputEditText>(R.id.etCosto)
-        val switchForraje = dialogView.findViewById<SwitchMaterial>(R.id.switchForraje)
-
-        // Nutrientes
-        val etGE = dialogView.findViewById<TextInputEditText>(R.id.etGE)
-        val etCP = dialogView.findViewById<TextInputEditText>(R.id.etCP)
-        val etTDN = dialogView.findViewById<TextInputEditText>(R.id.etTDN)
-        val etNEm = dialogView.findViewById<TextInputEditText>(R.id.etNEm)
-        val etCa = dialogView.findViewById<TextInputEditText>(R.id.etCa)
-        val etP = dialogView.findViewById<TextInputEditText>(R.id.etP)
-        val etNDF = dialogView.findViewById<TextInputEditText>(R.id.etNDF)
-        val etStarch = dialogView.findViewById<TextInputEditText>(R.id.etStarch)
-        val etFat = dialogView.findViewById<TextInputEditText>(R.id.etFat)
-
-        // Establecer valores actuales
-        etNombre.setText(insumo.nombre)
-        etCosto.setText(insumo.costo.toString())
-        switchForraje.isChecked = insumo.esForraje
-
-        // Cargar nutrientes
-        etGE.setText(insumo.getNutriente(Insumo.GE).toString())
-        etCP.setText(insumo.getNutriente(Insumo.CP).toString())
-        etTDN.setText(insumo.getNutriente(Insumo.TDN).toString())
-        etNEm.setText(insumo.getNutriente(Insumo.NEM).toString())
-        etCa.setText(insumo.getNutriente(Insumo.CA).toString())
-        etP.setText(insumo.getNutriente(Insumo.P).toString())
-        etNDF.setText(insumo.getNutriente(Insumo.NDF).toString())
-        etStarch.setText(insumo.getNutriente(Insumo.STARCH).toString())
-        etFat.setText(insumo.getNutriente(Insumo.FAT).toString())
-
-        MaterialAlertDialogBuilder(requireContext())
-            .setView(dialogView)
-            .setPositiveButton(getString(R.string.guardar)) { _, _ ->
-                // Validar campos obligatorios
-                val nombre = etNombre.text.toString().trim()
-                val costoStr = etCosto.text.toString().trim()
-
-                if (nombre.isEmpty() || costoStr.isEmpty()) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.error_campos_vacios),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@setPositiveButton
-                }
-
-                val costo = costoStr.toDoubleOrNull() ?: 0.0
-                val esForraje = switchForraje.isChecked
-
-                // Crear mapa de nutrientes
-                val nutrientes = mutableMapOf<String, Double>()
-
-                etGE.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.GE] = it
-                }
-                etCP.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.CP] = it
-                }
-                etTDN.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.TDN] = it
-                }
-                etNEm.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.NEM] = it
-                }
-                etCa.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.CA] = it
-                }
-                etP.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.P] = it
-                }
-                etNDF.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.NDF] = it
-                }
-                etStarch.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.STARCH] = it
-                }
-                etFat.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.FAT] = it
-                }
-
-                // Crear insumo actualizado (mantener el mismo ID)
-                val insumoActualizado = Insumo(
-                    id = insumo.id,
-                    nombre = nombre,
-                    costo = costo,
-                    esForraje = esForraje,
-                    nutrientes = nutrientes
-                )
-
-                guardarInsumo(insumoActualizado)
-            }
-            .setNegativeButton(getString(R.string.cancelar), null)
-            .show()
-    }
-
     fun showAddDialog() {
-        // Mostrar opciones: Catálogo o Manual
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Agregar Insumo")
             .setMessage("¿Cómo deseas agregar el insumo?")
@@ -218,24 +107,43 @@ class InsumosTabFragment : Fragment() {
         val dialogView = LayoutInflater.from(requireContext())
             .inflate(R.layout.dialog_insumo, null)
 
-        // Referencias a los campos
+        // Referencias a los campos básicos
         val etNombre = dialogView.findViewById<TextInputEditText>(R.id.etNombre)
         val etCosto = dialogView.findViewById<TextInputEditText>(R.id.etCosto)
         val switchForraje = dialogView.findViewById<SwitchMaterial>(R.id.switchForraje)
+        val etInclusionMinima = dialogView.findViewById<TextInputEditText>(R.id.etInclusionMinima)
+        val etInclusionMaxima = dialogView.findViewById<TextInputEditText>(R.id.etInclusionMaxima)
 
-        // Nutrientes
-        val etGE = dialogView.findViewById<TextInputEditText>(R.id.etGE)
-        val etCP = dialogView.findViewById<TextInputEditText>(R.id.etCP)
-        val etTDN = dialogView.findViewById<TextInputEditText>(R.id.etTDN)
-        val etNEm = dialogView.findViewById<TextInputEditText>(R.id.etNEm)
-        val etCa = dialogView.findViewById<TextInputEditText>(R.id.etCa)
-        val etP = dialogView.findViewById<TextInputEditText>(R.id.etP)
-        val etNDF = dialogView.findViewById<TextInputEditText>(R.id.etNDF)
-        val etStarch = dialogView.findViewById<TextInputEditText>(R.id.etStarch)
-        val etFat = dialogView.findViewById<TextInputEditText>(R.id.etFat)
+        // Referencias a campos de Energía
+        val etEnergiaBruta = dialogView.findViewById<TextInputEditText>(R.id.etEnergiaBruta)
+        val etEnergiaMetabolizable = dialogView.findViewById<TextInputEditText>(R.id.etEnergiaMetabolizable)
+        val etEnergiaNetaMantenimiento = dialogView.findViewById<TextInputEditText>(R.id.etEnergiaNetaMantenimiento)
 
+        // Referencias a campos de Composición Nutricional
+        val etProteinaCruda = dialogView.findViewById<TextInputEditText>(R.id.etProteinaCruda)
+        val etFDN = dialogView.findViewById<TextInputEditText>(R.id.etFDN)
+        val etFDA = dialogView.findViewById<TextInputEditText>(R.id.etFDA)
+        val etExtractoEtereo = dialogView.findViewById<TextInputEditText>(R.id.etExtractoEtereo)
+        val etCenizas = dialogView.findViewById<TextInputEditText>(R.id.etCenizas)
+        val etDegradabilidadRuminal = dialogView.findViewById<TextInputEditText>(R.id.etDegradabilidadRuminal)
+        val etMetanoProducido = dialogView.findViewById<TextInputEditText>(R.id.etMetanoProducido)
+
+        // Referencias a Macrominerales
+        val etCalcio = dialogView.findViewById<TextInputEditText>(R.id.etCalcio)
+        val etFosforo = dialogView.findViewById<TextInputEditText>(R.id.etFosforo)
+        val etMagnesio = dialogView.findViewById<TextInputEditText>(R.id.etMagnesio)
+        val etSodio = dialogView.findViewById<TextInputEditText>(R.id.etSodio)
+        val etPotasio = dialogView.findViewById<TextInputEditText>(R.id.etPotasio)
+        val etAzufre = dialogView.findViewById<TextInputEditText>(R.id.etAzufre)
+
+        // Referencias a Microminerales
+        val etCobre = dialogView.findViewById<TextInputEditText>(R.id.etCobre)
+        val etZinc = dialogView.findViewById<TextInputEditText>(R.id.etZinc)
+        val etSelenio = dialogView.findViewById<TextInputEditText>(R.id.etSelenio)
+        val etCobalto = dialogView.findViewById<TextInputEditText>(R.id.etCobalto)
 
         MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Nuevo Insumo")
             .setView(dialogView)
             .setPositiveButton(getString(R.string.guardar)) { _, _ ->
                 // Validar campos obligatorios
@@ -253,44 +161,36 @@ class InsumosTabFragment : Fragment() {
 
                 val costo = costoStr.toDoubleOrNull() ?: 0.0
                 val esForraje = switchForraje.isChecked
+                val inclusionMin = etInclusionMinima.text.toString().toDoubleOrNull() ?: 0.0
+                val inclusionMax = etInclusionMaxima.text.toString().toDoubleOrNull() ?: 100.0
+
+                // Validar restricciones de inclusión
+                if (inclusionMin < 0.0 || inclusionMax > 100.0 || inclusionMin > inclusionMax) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Restricciones de inclusión inválidas",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
 
                 // Crear mapa de nutrientes
-                val nutrientes = mutableMapOf<String, Double>()
+                val nutrientes = buildNutrientMap(
+                    etEnergiaBruta, etEnergiaMetabolizable, etEnergiaNetaMantenimiento,
+                    etProteinaCruda, etFDN, etFDA, etExtractoEtereo, etCenizas,
+                    etDegradabilidadRuminal, etMetanoProducido,
+                    etCalcio, etFosforo, etMagnesio, etSodio, etPotasio, etAzufre,
+                    etCobre, etZinc, etSelenio, etCobalto
+                )
 
-                etGE.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.GE] = it
-                }
-                etCP.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.CP] = it
-                }
-                etTDN.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.TDN] = it
-                }
-                etNEm.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.NEM] = it
-                }
-                etCa.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.CA] = it
-                }
-                etP.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.P] = it
-                }
-                etNDF.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.NDF] = it
-                }
-                etStarch.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.STARCH] = it
-                }
-                etFat.text.toString().toDoubleOrNull()?.let {
-                    nutrientes[Insumo.FAT] = it
-                }
-
-                // Crear nuevo insumo con ID único
+                // Crear insumo
                 val nuevoInsumo = Insumo(
                     id = UUID.randomUUID().toString(),
                     nombre = nombre,
                     costo = costo,
                     esForraje = esForraje,
+                    inclusionMinima = inclusionMin,
+                    inclusionMaxima = inclusionMax,
                     nutrientes = nutrientes
                 )
 
@@ -300,28 +200,246 @@ class InsumosTabFragment : Fragment() {
             .show()
     }
 
-    private fun showCatalogDialog() {
-        val catalog = catalogManager.getIngredientsCatalog()
+    /**
+     * Muestra el diálogo para editar un insumo existente
+     */
+    private fun showEditDialog(insumo: Insumo) {
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_insumo, null)
 
-        // Crear categorías para mejor presentación
-        val categories = catalog.groupBy {
-            when {
-                it.esForraje -> "Forrajes"
-                it.getNutriente("CP") > 30.0 -> "Suplementos Proteicos"
-                it.getNutriente("Starch") > 50.0 -> "Granos Energéticos"
-                else -> "Otros"
+        // Referencias a los campos
+        val etNombre = dialogView.findViewById<TextInputEditText>(R.id.etNombre)
+        val etCosto = dialogView.findViewById<TextInputEditText>(R.id.etCosto)
+        val switchForraje = dialogView.findViewById<SwitchMaterial>(R.id.switchForraje)
+        val etInclusionMinima = dialogView.findViewById<TextInputEditText>(R.id.etInclusionMinima)
+        val etInclusionMaxima = dialogView.findViewById<TextInputEditText>(R.id.etInclusionMaxima)
+
+        // Campos de Energía
+        val etEnergiaBruta = dialogView.findViewById<TextInputEditText>(R.id.etEnergiaBruta)
+        val etEnergiaMetabolizable = dialogView.findViewById<TextInputEditText>(R.id.etEnergiaMetabolizable)
+        val etEnergiaNetaMantenimiento = dialogView.findViewById<TextInputEditText>(R.id.etEnergiaNetaMantenimiento)
+
+        // Campos de Composición
+        val etProteinaCruda = dialogView.findViewById<TextInputEditText>(R.id.etProteinaCruda)
+        val etFDN = dialogView.findViewById<TextInputEditText>(R.id.etFDN)
+        val etFDA = dialogView.findViewById<TextInputEditText>(R.id.etFDA)
+        val etExtractoEtereo = dialogView.findViewById<TextInputEditText>(R.id.etExtractoEtereo)
+        val etCenizas = dialogView.findViewById<TextInputEditText>(R.id.etCenizas)
+        val etDegradabilidadRuminal = dialogView.findViewById<TextInputEditText>(R.id.etDegradabilidadRuminal)
+        val etMetanoProducido = dialogView.findViewById<TextInputEditText>(R.id.etMetanoProducido)
+
+        // Macrominerales
+        val etCalcio = dialogView.findViewById<TextInputEditText>(R.id.etCalcio)
+        val etFosforo = dialogView.findViewById<TextInputEditText>(R.id.etFosforo)
+        val etMagnesio = dialogView.findViewById<TextInputEditText>(R.id.etMagnesio)
+        val etSodio = dialogView.findViewById<TextInputEditText>(R.id.etSodio)
+        val etPotasio = dialogView.findViewById<TextInputEditText>(R.id.etPotasio)
+        val etAzufre = dialogView.findViewById<TextInputEditText>(R.id.etAzufre)
+
+        // Microminerales
+        val etCobre = dialogView.findViewById<TextInputEditText>(R.id.etCobre)
+        val etZinc = dialogView.findViewById<TextInputEditText>(R.id.etZinc)
+        val etSelenio = dialogView.findViewById<TextInputEditText>(R.id.etSelenio)
+        val etCobalto = dialogView.findViewById<TextInputEditText>(R.id.etCobalto)
+
+        // Establecer valores actuales
+        etNombre.setText(insumo.nombre)
+        etCosto.setText(insumo.costo.toString())
+        switchForraje.isChecked = insumo.esForraje
+        etInclusionMinima.setText(insumo.inclusionMinima.toString())
+        etInclusionMaxima.setText(insumo.inclusionMaxima.toString())
+
+        // Cargar nutrientes existentes
+        loadNutrientValues(insumo,
+            etEnergiaBruta, etEnergiaMetabolizable, etEnergiaNetaMantenimiento,
+            etProteinaCruda, etFDN, etFDA, etExtractoEtereo, etCenizas,
+            etDegradabilidadRuminal, etMetanoProducido,
+            etCalcio, etFosforo, etMagnesio, etSodio, etPotasio, etAzufre,
+            etCobre, etZinc, etSelenio, etCobalto
+        )
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Editar Insumo")
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.guardar)) { _, _ ->
+                // Validar campos obligatorios
+                val nombre = etNombre.text.toString().trim()
+                val costoStr = etCosto.text.toString().trim()
+
+                if (nombre.isEmpty() || costoStr.isEmpty()) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.error_campos_vacios),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
+
+                val costo = costoStr.toDoubleOrNull() ?: 0.0
+                val esForraje = switchForraje.isChecked
+                val inclusionMin = etInclusionMinima.text.toString().toDoubleOrNull() ?: 0.0
+                val inclusionMax = etInclusionMaxima.text.toString().toDoubleOrNull() ?: 100.0
+
+                // Validar restricciones
+                if (inclusionMin < 0.0 || inclusionMax > 100.0 || inclusionMin > inclusionMax) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Restricciones de inclusión inválidas",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
+
+                // Crear mapa de nutrientes actualizado
+                val nutrientes = buildNutrientMap(
+                    etEnergiaBruta, etEnergiaMetabolizable, etEnergiaNetaMantenimiento,
+                    etProteinaCruda, etFDN, etFDA, etExtractoEtereo, etCenizas,
+                    etDegradabilidadRuminal, etMetanoProducido,
+                    etCalcio, etFosforo, etMagnesio, etSodio, etPotasio, etAzufre,
+                    etCobre, etZinc, etSelenio, etCobalto
+                )
+
+                // Crear insumo actualizado (mantener el mismo ID)
+                val insumoActualizado = Insumo(
+                    id = insumo.id,
+                    nombre = nombre,
+                    costo = costo,
+                    esForraje = esForraje,
+                    inclusionMinima = inclusionMin,
+                    inclusionMaxima = inclusionMax,
+                    nutrientes = nutrientes
+                )
+
+                guardarInsumo(insumoActualizado)
             }
-        }
+            .setNegativeButton(getString(R.string.cancelar), null)
+            .show()
+    }
 
-        // Crear lista de opciones formateada
+    /**
+     * Construye el mapa de nutrientes desde los campos del formulario
+     */
+    private fun buildNutrientMap(
+        // Energía
+        etEB: TextInputEditText?, etEM: TextInputEditText?, etENm: TextInputEditText?,
+        // Composición
+        etPC: TextInputEditText?, etFDN: TextInputEditText?, etFDA: TextInputEditText?,
+        etEE: TextInputEditText?, etCenizas: TextInputEditText?,
+        etDegRum: TextInputEditText?, etCH4: TextInputEditText?,
+        // Macrominerales
+        etCa: TextInputEditText?, etP: TextInputEditText?, etMg: TextInputEditText?,
+        etNa: TextInputEditText?, etK: TextInputEditText?, etS: TextInputEditText?,
+        // Microminerales
+        etCu: TextInputEditText?, etZn: TextInputEditText?,
+        etSe: TextInputEditText?, etCo: TextInputEditText?
+    ): Map<String, Double> {
+        val nutrientes = mutableMapOf<String, Double>()
+
+        // Energía
+        etEB?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.ENERGIA_BRUTA] = it }
+        etEM?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.ENERGIA_METABOLIZABLE] = it }
+        etENm?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.ENERGIA_NETA_MANTENIMIENTO] = it }
+
+        // Composición Nutricional
+        etPC?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.PROTEINA_CRUDA] = it }
+        etFDN?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.FIBRA_DETERGENTE_NEUTRA] = it }
+        etFDA?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.FIBRA_DETERGENTE_ACIDA] = it }
+        etEE?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.EXTRACTO_ETEREO] = it }
+        etCenizas?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.CENIZAS] = it }
+        etDegRum?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.DEGRADABILIDAD_RUMINAL] = it }
+        etCH4?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.METANO_PRODUCIDO] = it }
+
+        // Macrominerales
+        etCa?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.CALCIO] = it }
+        etP?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.FOSFORO] = it }
+        etMg?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.MAGNESIO] = it }
+        etNa?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.SODIO] = it }
+        etK?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.POTASIO] = it }
+        etS?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.AZUFRE] = it }
+
+        // Microminerales
+        etCu?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.COBRE] = it }
+        etZn?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.ZINC] = it }
+        etSe?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.SELENIO] = it }
+        etCo?.text.toString().toDoubleOrNull()?.let { nutrientes[Insumo.COBALTO] = it }
+
+        return nutrientes
+    }
+
+    /**
+     * Carga los valores de nutrientes desde el insumo a los campos del formulario
+     */
+    private fun loadNutrientValues(
+        insumo: Insumo,
+        // Energía
+        etEB: TextInputEditText?, etEM: TextInputEditText?, etENm: TextInputEditText?,
+        // Composición
+        etPC: TextInputEditText?, etFDN: TextInputEditText?, etFDA: TextInputEditText?,
+        etEE: TextInputEditText?, etCenizas: TextInputEditText?,
+        etDegRum: TextInputEditText?, etCH4: TextInputEditText?,
+        // Macrominerales
+        etCa: TextInputEditText?, etP: TextInputEditText?, etMg: TextInputEditText?,
+        etNa: TextInputEditText?, etK: TextInputEditText?, etS: TextInputEditText?,
+        // Microminerales
+        etCu: TextInputEditText?, etZn: TextInputEditText?,
+        etSe: TextInputEditText?, etCo: TextInputEditText?
+    ) {
+        // Energía
+        etEB?.setText(insumo.getNutriente(Insumo.ENERGIA_BRUTA).toString())
+        etEM?.setText(insumo.getNutriente(Insumo.ENERGIA_METABOLIZABLE).toString())
+        etENm?.setText(insumo.getNutriente(Insumo.ENERGIA_NETA_MANTENIMIENTO).toString())
+
+        // Composición
+        etPC?.setText(insumo.getNutriente(Insumo.PROTEINA_CRUDA).toString())
+        etFDN?.setText(insumo.getNutriente(Insumo.FIBRA_DETERGENTE_NEUTRA).toString())
+        etFDA?.setText(insumo.getNutriente(Insumo.FIBRA_DETERGENTE_ACIDA).toString())
+        etEE?.setText(insumo.getNutriente(Insumo.EXTRACTO_ETEREO).toString())
+        etCenizas?.setText(insumo.getNutriente(Insumo.CENIZAS).toString())
+        etDegRum?.setText(insumo.getNutriente(Insumo.DEGRADABILIDAD_RUMINAL).toString())
+        etCH4?.setText(insumo.getNutriente(Insumo.METANO_PRODUCIDO).toString())
+
+        // Macrominerales
+        etCa?.setText(insumo.getNutriente(Insumo.CALCIO).toString())
+        etP?.setText(insumo.getNutriente(Insumo.FOSFORO).toString())
+        etMg?.setText(insumo.getNutriente(Insumo.MAGNESIO).toString())
+        etNa?.setText(insumo.getNutriente(Insumo.SODIO).toString())
+        etK?.setText(insumo.getNutriente(Insumo.POTASIO).toString())
+        etS?.setText(insumo.getNutriente(Insumo.AZUFRE).toString())
+
+        // Microminerales
+        etCu?.setText(insumo.getNutriente(Insumo.COBRE).toString())
+        etZn?.setText(insumo.getNutriente(Insumo.ZINC).toString())
+        etSe?.setText(insumo.getNutriente(Insumo.SELENIO).toString())
+        etCo?.setText(insumo.getNutriente(Insumo.COBALTO).toString())
+    }
+
+    /**
+     * Muestra el catálogo de insumos predefinidos
+     */
+    private fun showCatalogDialog() {
+        val insumos = catalogManager.obtenerCatalogoInsumos()
         val opciones = mutableListOf<String>()
         val insumosPorIndice = mutableListOf<Insumo>()
 
-        categories.forEach { (category, insumos) ->
-            opciones.add("--- $category ---")
-            insumosPorIndice.add(insumos[0]) // Placeholder
+        // Agrupar por categorías
+        val forrajes = insumos.filter { it.esForraje }
+        val concentrados = insumos.filter { !it.esForraje }
 
-            insumos.forEach { insumo ->
+        if (forrajes.isNotEmpty()) {
+            opciones.add("--- FORRAJES ---")
+            insumosPorIndice.add(forrajes[0])
+
+            forrajes.forEach { insumo ->
+                opciones.add("  ${insumo.nombre} - $${String.format("%.2f", insumo.costo)}/kg")
+                insumosPorIndice.add(insumo)
+            }
+        }
+
+        if (concentrados.isNotEmpty()) {
+            opciones.add("--- CONCENTRADOS ---")
+            insumosPorIndice.add(concentrados[0])
+
+            concentrados.forEach { insumo ->
                 opciones.add("  ${insumo.nombre} - $${String.format("%.2f", insumo.costo)}/kg")
                 insumosPorIndice.add(insumo)
             }
@@ -332,7 +450,6 @@ class InsumosTabFragment : Fragment() {
             .setItems(opciones.toTypedArray()) { _, which ->
                 val selectedInsumo = insumosPorIndice[which]
 
-                // Verificar que no sea un header de categoría
                 if (!opciones[which].startsWith("---")) {
                     showAddToInventoryDialog(selectedInsumo)
                 }
@@ -357,25 +474,34 @@ class InsumosTabFragment : Fragment() {
                 val cantidad = etCantidad.text.toString().toDoubleOrNull() ?: 0.0
                 guardarInsumoConStock(newInsumo, cantidad)
             }
-            .setNeutralButton("Solo Insumo") { _, _ ->
+            .setNegativeButton("Solo Agregar") { _, _ ->
                 guardarInsumo(newInsumo)
             }
-            .setNegativeButton("Cancelar", null)
+            .setNeutralButton("Cancelar", null)
             .show()
     }
 
-    private fun guardarInsumo(insumo: Insumo) {
+    private fun guardarInsumoConStock(insumo: Insumo, cantidad: Double) {
         lifecycleScope.launch {
             try {
-                val exito = inventario.guardarInsumo(insumo)
+                val exitoInsumo = inventario.guardarInsumo(insumo)
 
-                if (exito) {
+                if (exitoInsumo && cantidad > 0) {
+                    // Crear item de inventario
+                    val inventarioItem = InventarioItem(
+                        insumo = insumo,
+                        cantidadDisponibleKg = cantidad
+                    )
+                    inventario.agregarInventario(inventarioItem)
+                }
+
+                if (exitoInsumo) {
                     Toast.makeText(
                         requireContext(),
-                        getString(R.string.insumo_guardado),
+                        "Insumo agregado exitosamente",
                         Toast.LENGTH_SHORT
                     ).show()
-                    cargarInsumos()
+                    loadData()
                 } else {
                     Toast.makeText(
                         requireContext(),
@@ -386,61 +512,54 @@ class InsumosTabFragment : Fragment() {
             } catch (e: Exception) {
                 Toast.makeText(
                     requireContext(),
-                    "${getString(R.string.error_guardar)}: ${e.message}",
+                    getString(R.string.error_guardar),
                     Toast.LENGTH_SHORT
                 ).show()
             }
         }
     }
 
-    private fun guardarInsumoConStock(insumo: Insumo, cantidad: Double) {
+    private fun guardarInsumo(insumo: Insumo) {
         lifecycleScope.launch {
             try {
-                // Guardar insumo
-                val exitoInsumo = inventario.guardarInsumo(insumo)
+                val exito = inventario.guardarInsumo(insumo)
 
-                if (exitoInsumo && cantidad > 0) {
-                    // Agregar al stock
-                    val exitoStock = inventario.agregarAlInventario(insumo, cantidad)
-
-                    if (exitoStock) {
-                        Toast.makeText(
-                            requireContext(),
-                            "Insumo agregado con ${String.format("%.2f", cantidad)} kg en stock",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                } else if (exitoInsumo) {
+                if (exito) {
                     Toast.makeText(
                         requireContext(),
-                        getString(R.string.insumo_guardado),
+                        "Insumo guardado exitosamente",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    loadData()
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.error_guardar),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
-
-                cargarInsumos()
             } catch (e: Exception) {
                 Toast.makeText(
                     requireContext(),
-                    "${getString(R.string.error_guardar)}: ${e.message}",
+                    getString(R.string.error_guardar),
                     Toast.LENGTH_SHORT
                 ).show()
             }
         }
     }
 
-    private fun confirmarEliminar(insumo: Insumo) {
+    private fun confirmDelete(insumo: Insumo) {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.eliminar))
-            .setMessage("¿Estás seguro de que deseas eliminar ${insumo.nombre}?")
-            .setPositiveButton(getString(R.string.eliminar)) { _, _ ->
-                eliminarInsumo(insumo)
+            .setTitle("Eliminar Insumo")
+            .setMessage("¿Estás seguro de eliminar ${insumo.nombre}?")
+            .setPositiveButton("Eliminar") { _, _ ->
+                deleteInsumo(insumo)
             }
-            .setNegativeButton(getString(R.string.cancelar), null)
+            .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun eliminarInsumo(insumo: Insumo) {
+    private fun deleteInsumo(insumo: Insumo) {
         lifecycleScope.launch {
             try {
                 val exito = inventario.eliminarInsumo(insumo.id)
@@ -448,10 +567,10 @@ class InsumosTabFragment : Fragment() {
                 if (exito) {
                     Toast.makeText(
                         requireContext(),
-                        "Insumo eliminado exitosamente",
+                        "Insumo eliminado",
                         Toast.LENGTH_SHORT
                     ).show()
-                    cargarInsumos()
+                    loadData()
                 } else {
                     Toast.makeText(
                         requireContext(),
@@ -462,7 +581,7 @@ class InsumosTabFragment : Fragment() {
             } catch (e: Exception) {
                 Toast.makeText(
                     requireContext(),
-                    "${getString(R.string.error_eliminar)}: ${e.message}",
+                    getString(R.string.error_eliminar),
                     Toast.LENGTH_SHORT
                 ).show()
             }

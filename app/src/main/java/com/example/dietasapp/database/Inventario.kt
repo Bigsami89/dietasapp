@@ -152,6 +152,13 @@ class Inventario(private val baseDeDatos: BaseDeDatos) {
         return baseDeDatos.eliminarInventario(insumoId)
     }
 
+
+    suspend fun agregarInventario(item: InventarioItem): Boolean {
+        return baseDeDatos.agregarInventario(item)
+    }
+
+
+
     /**
      * Verifica si hay suficiente stock para una dieta
      */

@@ -1,70 +1,98 @@
 package com.example.dietasapp.ui.inventory
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.dietasapp.R
 import com.example.dietasapp.data.Insumo
 import com.example.dietasapp.databinding.ItemInsumoBinding
 
+/**
+ * Adapter para mostrar la lista de insumos disponibles
+ */
 class InsumoAdapter(
-    private val onEditClick: (Insumo) -> Unit,
-    private val onDeleteClick: (Insumo) -> Unit
-) : ListAdapter<Insumo, InsumoAdapter.ViewHolder>(DiffCallback()) {
+    private val onEdit: (Insumo) -> Unit,
+    private val onDelete: (Insumo) -> Unit
+) : ListAdapter<Insumo, InsumoAdapter.InsumoViewHolder>(DiffCallback()) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): InsumoViewHolder {
         val binding = ItemInsumoBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
             false
         )
-        return ViewHolder(binding, onEditClick, onDeleteClick)
+        return InsumoViewHolder(binding, onEdit, onDelete)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: InsumoViewHolder, position: Int) {
         holder.bind(getItem(position))
     }
 
-    class ViewHolder(
+    class InsumoViewHolder(
         private val binding: ItemInsumoBinding,
-        private val onEditClick: (Insumo) -> Unit,
-        private val onDeleteClick: (Insumo) -> Unit
+        private val onEdit: (Insumo) -> Unit,
+        private val onDelete: (Insumo) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(insumo: Insumo) {
-            binding.apply {
-                tvNombreInsumo.text = insumo.nombre
-                tvCosto.text = "$${String.format("%.2f", insumo.costo)}/kg"
+            // Nombre del insumo
+            binding.tvNombreInsumo.text = insumo.nombre
 
-                // Chip de forraje
-                if (insumo.esForraje) {
-                    chipForraje.visibility = View.VISIBLE
-                } else {
-                    chipForraje.visibility = View.GONE
+            // Costo en MXN
+            binding.tvCosto.text = itemView.context.getString(
+                R.string.formato_costo_por_kg,
+                insumo.costo
+            )
+
+            // Tipo (Forraje o Concentrado)
+            binding.tvTipo.text = if (insumo.esForraje) {
+                itemView.context.getString(R.string.forraje)
+            } else {
+                itemView.context.getString(R.string.concentrado)
+            }
+
+            // Nutrientes principales para rumiantes
+            val pc = insumo.getProteinaCruda()
+            val em = insumo.getEnergiaMetabolizable()
+            val fdn = insumo.getFibraDetengenteNeutra()
+
+            binding.tvNutrientes.text = buildString {
+                append("PC: ${formatNutrient(pc)}% • ")
+                append("EM: ${formatNutrient(em)} MJ/kg • ")
+                append("FDN: ${formatNutrient(fdn)}%")
+            }
+
+            // Restricciones de inclusión
+            if (insumo.tieneRestriccionesPersonalizadas()) {
+                binding.tvRestricciones.text = buildString {
+                    append("Inclusión: ${formatNutrient(insumo.inclusionMinima)}% - ")
+                    append("${formatNutrient(insumo.inclusionMaxima)}%")
                 }
+                binding.tvRestricciones.visibility = android.view.View.VISIBLE
+            } else {
+                binding.tvRestricciones.visibility = android.view.View.GONE
+            }
 
-                // Mostrar algunos nutrientes clave
-                val nutrientesTexto = buildString {
-                    val cp = insumo.getNutriente("CP")
-                    val ndf = insumo.getNutriente("NDF")
+            // Icono según tipo
+            binding.iconInsumo.setImageResource(
+                if (insumo.esForraje) R.drawable.ic_grass else R.drawable.ic_grain
+            )
 
-                    if (cp > 0) append("CP: ${String.format("%.1f", cp)}%")
-                    if (ndf > 0) {
-                        if (isNotEmpty()) append(" • ")
-                        append("NDF: ${String.format("%.1f", ndf)}%")
-                    }
-                }
-                tvNutrientes.text = nutrientesTexto
+            // Acciones
+            binding.btnEdit.setOnClickListener { onEdit(insumo) }
+            binding.btnDelete.setOnClickListener { onDelete(insumo) }
 
-                btnEditarInsumo.setOnClickListener {
-                    onEditClick(insumo)
-                }
+            // Click en el card también permite editar
+            binding.root.setOnClickListener { onEdit(insumo) }
+        }
 
-                btnEliminarInsumo.setOnClickListener {
-                    onDeleteClick(insumo)
-                }
+        private fun formatNutrient(value: Double): String {
+            return if (value == 0.0) {
+                "0"
+            } else {
+                String.format("%.1f", value)
             }
         }
     }
