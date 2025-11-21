@@ -138,23 +138,51 @@ class AnimalesTabFragment : Fragment() {
             dialogBinding.etDMI.setText(it.consumoDMI.toString())
             dialogBinding.spinnerTipoDieta.setText(it.tipo.descripcion, false)
 
-            // Requerimientos mínimos
-            it.requerimientosMinimos["CP"]?.let { v -> dialogBinding.etCPMin.setText(v.toString()) }
-            it.requerimientosMinimos["NEm"]?.let { v -> dialogBinding.etNEmMin.setText(v.toString()) }
-            it.requerimientosMinimos["TDN"]?.let { v -> dialogBinding.etTDNMin.setText(v.toString()) }
-            it.requerimientosMinimos["Ca"]?.let { v -> dialogBinding.etCaMin.setText(v.toString()) }
-            it.requerimientosMinimos["P"]?.let { v -> dialogBinding.etPMin.setText(v.toString()) }
-            it.requerimientosMinimos["NDF"]?.let { v -> dialogBinding.etNDFMin.setText(v.toString()) }
-            it.requerimientosMinimos["Fat"]?.let { v -> dialogBinding.etFatMin.setText(v.toString()) }
+            // Requerimientos mínimos - Usando constantes de Animal
+            it.requerimientosMinimos[Animal.PROTEINA_CRUDA]?.let { v ->
+                dialogBinding.etCPMin.setText(v.toString())
+            }
+            it.requerimientosMinimos[Animal.ENERGIA_NETA_MANTENIMIENTO]?.let { v ->
+                dialogBinding.etNEmMin.setText(v.toString())
+            }
+            it.requerimientosMinimos["TDN"]?.let { v ->
+                dialogBinding.etTDNMin.setText(v.toString())
+            }
+            it.requerimientosMinimos[Animal.CALCIO]?.let { v ->
+                dialogBinding.etCaMin.setText(v.toString())
+            }
+            it.requerimientosMinimos[Animal.FOSFORO]?.let { v ->
+                dialogBinding.etPMin.setText(v.toString())
+            }
+            it.requerimientosMinimos[Animal.FIBRA_DETERGENTE_NEUTRA]?.let { v ->
+                dialogBinding.etNDFMin.setText(v.toString())
+            }
+            it.requerimientosMinimos[Animal.EXTRACTO_ETEREO]?.let { v ->
+                dialogBinding.etFatMin.setText(v.toString())
+            }
 
-            // Requerimientos máximos
-            it.requerimientosMaximos["CP"]?.let { v -> dialogBinding.etCPMax.setText(v.toString()) }
-            it.requerimientosMaximos["NEm"]?.let { v -> dialogBinding.etNEmMax.setText(v.toString()) }
-            it.requerimientosMaximos["TDN"]?.let { v -> dialogBinding.etTDNMax.setText(v.toString()) }
-            it.requerimientosMaximos["Ca"]?.let { v -> dialogBinding.etCaMax.setText(v.toString()) }
-            it.requerimientosMaximos["P"]?.let { v -> dialogBinding.etPMax.setText(v.toString()) }
-            it.requerimientosMaximos["NDF"]?.let { v -> dialogBinding.etNDFMax.setText(v.toString()) }
-            it.requerimientosMaximos["Fat"]?.let { v -> dialogBinding.etFatMax.setText(v.toString()) }
+            // Requerimientos máximos - Usando constantes de Animal
+            it.requerimientosMaximos[Animal.PROTEINA_CRUDA]?.let { v ->
+                dialogBinding.etCPMax.setText(v.toString())
+            }
+            it.requerimientosMaximos[Animal.ENERGIA_NETA_MANTENIMIENTO]?.let { v ->
+                dialogBinding.etNEmMax.setText(v.toString())
+            }
+            it.requerimientosMaximos["TDN"]?.let { v ->
+                dialogBinding.etTDNMax.setText(v.toString())
+            }
+            it.requerimientosMaximos[Animal.CALCIO]?.let { v ->
+                dialogBinding.etCaMax.setText(v.toString())
+            }
+            it.requerimientosMaximos[Animal.FOSFORO]?.let { v ->
+                dialogBinding.etPMax.setText(v.toString())
+            }
+            it.requerimientosMaximos[Animal.FIBRA_DETERGENTE_NEUTRA]?.let { v ->
+                dialogBinding.etNDFMax.setText(v.toString())
+            }
+            it.requerimientosMaximos[Animal.EXTRACTO_ETEREO]?.let { v ->
+                dialogBinding.etFatMax.setText(v.toString())
+            }
         }
 
         val dialog = AlertDialog.Builder(requireContext())
@@ -166,69 +194,125 @@ class AnimalesTabFragment : Fragment() {
         }
 
         dialogBinding.btnGuardar.setOnClickListener {
-            val nombre = dialogBinding.etNombre.text.toString().trim()
-            val pesoStr = dialogBinding.etPeso.text.toString().trim()
-            val dmiStr = dialogBinding.etDMI.text.toString().trim()
-            val tipoStr = dialogBinding.spinnerTipoDieta.text.toString()
+            val resultado = validarYCrearAnimal(dialogBinding, animal)
 
-            if (nombre.isEmpty() || pesoStr.isEmpty() || dmiStr.isEmpty() || tipoStr.isEmpty()) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.error_campos_vacios),
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@setOnClickListener
+            when {
+                resultado.isSuccess -> {
+                    guardarAnimal(resultado.getOrNull()!!)
+                    dialog.dismiss()
+                }
+                else -> {
+                    Toast.makeText(
+                        requireContext(),
+                        resultado.exceptionOrNull()?.message ?: "Error al crear animal",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
-
-            val peso = pesoStr.toDoubleOrNull()
-            val dmi = dmiStr.toDoubleOrNull()
-
-            if (peso == null || dmi == null) {
-                Toast.makeText(
-                    requireContext(),
-                    "Valores numéricos inválidos",
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@setOnClickListener
-            }
-
-            val tipo = TipoDieta.values().first { it.descripcion == tipoStr }
-
-            // Requerimientos mínimos
-            val reqMin = mutableMapOf<String, Double>()
-            dialogBinding.etCPMin.text.toString().toDoubleOrNull()?.let { reqMin["CP"] = it }
-            dialogBinding.etNEmMin.text.toString().toDoubleOrNull()?.let { reqMin["NEm"] = it }
-            dialogBinding.etTDNMin.text.toString().toDoubleOrNull()?.let { reqMin["TDN"] = it }
-            dialogBinding.etCaMin.text.toString().toDoubleOrNull()?.let { reqMin["Ca"] = it }
-            dialogBinding.etPMin.text.toString().toDoubleOrNull()?.let { reqMin["P"] = it }
-            dialogBinding.etNDFMin.text.toString().toDoubleOrNull()?.let { reqMin["NDF"] = it }
-            dialogBinding.etFatMin.text.toString().toDoubleOrNull()?.let { reqMin["Fat"] = it }
-
-            // Requerimientos máximos
-            val reqMax = mutableMapOf<String, Double>()
-            dialogBinding.etCPMax.text.toString().toDoubleOrNull()?.let { reqMax["CP"] = it }
-            dialogBinding.etNEmMax.text.toString().toDoubleOrNull()?.let { reqMax["NEm"] = it }
-            dialogBinding.etTDNMax.text.toString().toDoubleOrNull()?.let { reqMax["TDN"] = it }
-            dialogBinding.etCaMax.text.toString().toDoubleOrNull()?.let { reqMax["Ca"] = it }
-            dialogBinding.etPMax.text.toString().toDoubleOrNull()?.let { reqMax["P"] = it }
-            dialogBinding.etNDFMax.text.toString().toDoubleOrNull()?.let { reqMax["NDF"] = it }
-            dialogBinding.etFatMax.text.toString().toDoubleOrNull()?.let { reqMax["Fat"] = it }
-
-            val nuevoAnimal = Animal(
-                id = animal?.id ?: UUID.randomUUID().toString(),
-                nombre = nombre,
-                tipo = tipo,
-                pesoKg = peso,
-                consumoDMI = dmi,
-                requerimientosMinimos = reqMin,
-                requerimientosMaximos = reqMax
-            )
-
-            guardarAnimal(nuevoAnimal)
-            dialog.dismiss()
         }
 
         dialog.show()
+    }
+
+    /**
+     * Valida los campos del diálogo y crea el objeto Animal
+     */
+    private fun validarYCrearAnimal(
+        dialogBinding: DialogAnimalCompleteBinding,
+        animalExistente: Animal?
+    ): Result<Animal> {
+        // Validar campos básicos
+        val nombre = dialogBinding.etNombre.text.toString().trim()
+        val pesoStr = dialogBinding.etPeso.text.toString().trim()
+        val dmiStr = dialogBinding.etDMI.text.toString().trim()
+        val tipoStr = dialogBinding.spinnerTipoDieta.text.toString()
+
+        if (nombre.isEmpty() || pesoStr.isEmpty() || dmiStr.isEmpty() || tipoStr.isEmpty()) {
+            return Result.failure(Exception(getString(R.string.error_campos_vacios)))
+        }
+
+        val peso = pesoStr.toDoubleOrNull()
+        val dmi = dmiStr.toDoubleOrNull()
+
+        if (peso == null || dmi == null || peso <= 0 || dmi <= 0) {
+            return Result.failure(Exception("Valores numéricos inválidos"))
+        }
+
+        val tipo = TipoDieta.values().firstOrNull { it.descripcion == tipoStr }
+            ?: return Result.failure(Exception("Tipo de dieta no válido"))
+
+        // Construir requerimientos mínimos usando constantes de Animal
+        val reqMin = buildMap {
+            dialogBinding.etCPMin.text.toString().toDoubleOrNull()?.let {
+                put(Animal.PROTEINA_CRUDA, it)
+            }
+            dialogBinding.etNEmMin.text.toString().toDoubleOrNull()?.let {
+                put(Animal.ENERGIA_NETA_MANTENIMIENTO, it)
+            }
+            dialogBinding.etTDNMin.text.toString().toDoubleOrNull()?.let {
+                put("TDN", it) // TDN no tiene constante en Animal aún
+            }
+            dialogBinding.etCaMin.text.toString().toDoubleOrNull()?.let {
+                put(Animal.CALCIO, it)
+            }
+            dialogBinding.etPMin.text.toString().toDoubleOrNull()?.let {
+                put(Animal.FOSFORO, it)
+            }
+            dialogBinding.etNDFMin.text.toString().toDoubleOrNull()?.let {
+                put(Animal.FIBRA_DETERGENTE_NEUTRA, it)
+            }
+            dialogBinding.etFatMin.text.toString().toDoubleOrNull()?.let {
+                put(Animal.EXTRACTO_ETEREO, it)
+            }
+        }
+
+        // Construir requerimientos máximos usando constantes de Animal
+        val reqMax = buildMap {
+            dialogBinding.etCPMax.text.toString().toDoubleOrNull()?.let {
+                put(Animal.PROTEINA_CRUDA, it)
+            }
+            dialogBinding.etNEmMax.text.toString().toDoubleOrNull()?.let {
+                put(Animal.ENERGIA_NETA_MANTENIMIENTO, it)
+            }
+            dialogBinding.etTDNMax.text.toString().toDoubleOrNull()?.let {
+                put("TDN", it)
+            }
+            dialogBinding.etCaMax.text.toString().toDoubleOrNull()?.let {
+                put(Animal.CALCIO, it)
+            }
+            dialogBinding.etPMax.text.toString().toDoubleOrNull()?.let {
+                put(Animal.FOSFORO, it)
+            }
+            dialogBinding.etNDFMax.text.toString().toDoubleOrNull()?.let {
+                put(Animal.FIBRA_DETERGENTE_NEUTRA, it)
+            }
+            dialogBinding.etFatMax.text.toString().toDoubleOrNull()?.let {
+                put(Animal.EXTRACTO_ETEREO, it)
+            }
+        }
+
+        // Validar que los mínimos no sean mayores que los máximos
+        reqMin.forEach { (key, minVal) ->
+            reqMax[key]?.let { maxVal ->
+                if (minVal > maxVal) {
+                    return Result.failure(
+                        Exception("El valor mínimo de $key no puede ser mayor que el máximo")
+                    )
+                }
+            }
+        }
+
+        val nuevoAnimal = Animal(
+            id = animalExistente?.id ?: UUID.randomUUID().toString(),
+            nombre = nombre,
+            tipo = tipo,
+            pesoKg = peso,
+            consumoDMI = dmi,
+            requerimientosMinimos = reqMin,
+            requerimientosMaximos = reqMax
+        )
+
+        return Result.success(nuevoAnimal)
     }
 
     private fun guardarAnimal(animal: Animal) {

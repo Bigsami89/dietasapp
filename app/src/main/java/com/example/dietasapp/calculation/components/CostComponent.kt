@@ -1,6 +1,6 @@
 package com.example.dietasapp.calculation.components
 
-import com.example.dietasapp.domain.AnimalProfile
+import com.example.dietasapp.data.Animal
 import com.example.dietasapp.domain.Ingredient
 import org.ojalgo.optimisation.ExpressionsBasedModel
 import org.ojalgo.optimisation.Variable
@@ -16,7 +16,7 @@ class CostComponent : IDietComponent {
     override fun apply(
         model: ExpressionsBasedModel,
         variables: Map<Ingredient, Variable>,
-        profile: AnimalProfile,
+        animal: Animal,
         ingredients: List<Ingredient>
     ) {
         // Crear expresión para el costo total
@@ -31,8 +31,8 @@ class CostComponent : IDietComponent {
         costExpression.weight(1.0)
         model.minimise()
 
-        // Log para debugging (opcional)
-        logComponentApplication(ingredients)
+        // Log para debugging
+        logComponentApplication(animal, ingredients)
     }
 
     override fun getName(): String = "Cost Minimization"
@@ -43,8 +43,16 @@ class CostComponent : IDietComponent {
     /**
      * Registra información sobre la aplicación del componente
      */
-    private fun logComponentApplication(ingredients: List<Ingredient>) {
-        println("[${getName()}Name()] Aplicado con ${ingredients.size} ingredientes")
+    private fun logComponentApplication(animal: Animal, ingredients: List<Ingredient>) {
+        println("[${getName()}] Aplicado")
+        println("  Animal: ${animal.nombre}")
+        println("  Ingredientes evaluados: ${ingredients.size}")
         println("  Función objetivo: MIN Σ (costo_i × kg_i)")
+
+        // Mostrar rango de costos (opcional)
+        val costs = ingredients.map { it.cost }.filter { it > 0 }
+        if (costs.isNotEmpty()) {
+            println("  Rango de costos: ${String.format("%.2f", costs.minOrNull() ?: 0.0)} - ${String.format("%.2f", costs.maxOrNull() ?: 0.0)} $/kg")
+        }
     }
 }

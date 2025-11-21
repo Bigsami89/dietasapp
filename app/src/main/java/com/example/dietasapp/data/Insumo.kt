@@ -1,5 +1,7 @@
 package com.example.dietasapp.data
 
+import com.example.dietasapp.domain.Ingredient
+
 /**
  * Representa un insumo/ingrediente para formulación de raciones de rumiantes
  * Adaptado según especificaciones para nutrición de rumiantes en contexto mexicano
@@ -18,9 +20,10 @@ data class Insumo(
 ) {
     companion object {
         // ============= ENERGÍA (MJ/kg MS) =============
-        const val ENERGIA_BRUTA = "EB"  // Energía Bruta
+
+        const val ENERGIA_BRUTA = "BE"
+        const val ENERGIA_NETA_MANTENIMIENTO = "ENM"  // ** PRIORITARIO ** Energía Metabolizable
         const val ENERGIA_METABOLIZABLE = "EM"  // ** PRIORITARIO ** Energía Metabolizable
-        const val ENERGIA_NETA_MANTENIMIENTO = "ENm"  // Energía Neta Mantenimiento
 
         // ============= COMPOSICIÓN NUTRICIONAL (%) =============
         const val PROTEINA_CRUDA = "PC"  // Proteína Cruda
@@ -72,6 +75,10 @@ data class Insumo(
         return nutrientes[key] ?: default
     }
 
+
+    fun Ingredient.getNutrientOrNull(key: String): Double? {
+        return nutrients[key]
+    }
     /**
      * Obtiene la Energía Metabolizable (campo prioritario)
      */

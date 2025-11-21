@@ -1,8 +1,8 @@
 package com.example.dietasapp.calculation.components
 
 import com.example.dietasapp.calculation.methane.MethaneCalculator
+import com.example.dietasapp.data.Animal
 import com.example.dietasapp.data.TipoDieta
-import com.example.dietasapp.domain.AnimalProfile
 import com.example.dietasapp.domain.Ingredient
 import org.ojalgo.optimisation.ExpressionsBasedModel
 import org.ojalgo.optimisation.Variable
@@ -11,7 +11,7 @@ import org.ojalgo.optimisation.Variable
  * Componente que minimiza la producción de metano entérico
  *
  * Utiliza MethaneCalculator para estimar la producción de metano
- * de cada ingrediente y agrega restricciones al modelo
+ * y agrega restricciones al modelo
  *
  * NOTA: Este componente usa una aproximación lineal simplificada.
  * Para cálculos precisos, se debe ejecutar MethaneCalculator después
@@ -24,11 +24,11 @@ class MethaneComponent(
     override fun apply(
         model: ExpressionsBasedModel,
         variables: Map<Ingredient, Variable>,
-        profile: AnimalProfile,
+        animal: Animal,
         ingredients: List<Ingredient>
     ) {
-        // Determinar tipo de dieta basado en perfil
-        val tipoDieta = determineDietType(ingredients, variables)
+        // Usar el tipo de dieta definido en el animal
+        val tipoDieta = animal.tipo
 
         // Crear expresión para minimizar metano
         val methaneExpression = model.addExpression("Total_Methane")
@@ -38,7 +38,7 @@ class MethaneComponent(
         variables.forEach { (ingredient, variable) ->
             val methaneFactor = calculateMethaneFactorPerKg(
                 ingredient = ingredient,
-                bodyWeightKg = profile.bodyWeightKg,
+                bodyWeightKg = animal.pesoKg,
                 tipoDieta = tipoDieta
             )
 
@@ -50,30 +50,13 @@ class MethaneComponent(
         methaneExpression.weight(1.0)
         model.minimise()
 
-        logComponentApplication(tipoDieta, ingredients.size)
+        logComponentApplication(animal, ingredients.size)
     }
 
     override fun getName(): String = "Methane Minimization"
 
     override fun getDescription(): String =
         "Minimiza la producción de metano entérico según ecuaciones NASEM (2016)"
-
-    /**
-     * Determina el tipo de dieta basado en los ingredientes disponibles
-     */
-    private fun determineDietType(
-        ingredients: List<Ingredient>,
-        variables: Map<Ingredient, Variable>
-    ): TipoDieta {
-        // Contar ingredientes con alto contenido de NDF (forrajes)
-        val forageCount = ingredients.count {
-            it.getNutrient("NDF") > 40.0
-        }
-
-        val foragePercentage = (forageCount.toDouble() / ingredients.size) * 100.0
-
-        return TipoDieta.fromForagePercentage(foragePercentage)
-    }
 
     /**
      * Calcula un factor de metano aproximado por kg de ingrediente
@@ -86,20 +69,26 @@ class MethaneComponent(
         bodyWeightKg: Double,
         tipoDieta: TipoDieta
     ): Double {
+        // Si el ingrediente tiene CH4 calculado, usar ese valor
+        val ch4Directo = ingredient.getNutrientOrNull(Animal.METANO_PRODUCIDO)
+        if (ch4Directo != null && ch4Directo > 0.0) {
+            return ch4Directo
+        }
+
         // Factores base según tipo de forraje/concentrado
-        val ndf = ingredient.getNutrient("NDF")
-        val starch = ingredient.getNutrient("Starch")
-        val fat = ingredient.getNutrient("Fat")
+        val fdn = ingredient.getNutrient(Animal.FIBRA_DETERGENTE_NEUTRA)
+        val almidon = ingredient.getNutrientOrNull("Almidon") ?: 0.0
+        val ee = ingredient.getNutrient(Animal.EXTRACTO_ETEREO)
 
         // Factor base según ecuaciones NASEM simplificadas
         var methaneFactor = when {
-            ndf > 40.0 -> 20.0  // Forraje produce más metano
-            starch > 60.0 -> 8.0  // Granos producen menos metano
-            else -> 15.0  // Valor intermedio
+            fdn > 40.0 -> 20.0      // Forraje produce más metano
+            almidon > 60.0 -> 8.0   // Granos producen menos metano
+            else -> 15.0            // Valor intermedio
         }
 
         // Ajustar por grasa (reduce metano)
-        methaneFactor -= fat * 2.0
+        methaneFactor -= ee * 2.0
 
         // Ajustar por tipo de dieta
         methaneFactor *= when (tipoDieta) {
@@ -112,9 +101,11 @@ class MethaneComponent(
         return methaneFactor.coerceAtLeast(0.0)
     }
 
-    private fun logComponentApplication(tipoDieta: TipoDieta, numIngredients: Int) {
-        println("[${getName()}()] Aplicado")
-        println("  Tipo de dieta estimado: ${tipoDieta.descripcion}")
+    private fun logComponentApplication(animal: Animal, numIngredients: Int) {
+        println("[${getName()}] Aplicado")
+        println("  Animal: ${animal.nombre}")
+        println("  Tipo de dieta: ${animal.tipo.descripcion}")
+        println("  Peso: ${animal.pesoKg} kg")
         println("  Ingredientes evaluados: $numIngredients")
         println("  Función objetivo: MIN Σ (factor_CH4_i × kg_i)")
     }
@@ -125,15 +116,13 @@ class MethaneComponent(
      */
     fun calculatePreciseMethane(
         dietComposition: Map<Ingredient, Double>,
-        bodyWeightKg: Double,
-        dmiKgDay: Double,
-        tipoDieta: TipoDieta
+        animal: Animal
     ): MethaneCalculator.MethaneResult {
         return calculator.calculate(
             dietComposition = dietComposition,
-            bodyWeightKg = bodyWeightKg,
-            dmiKgDay = dmiKgDay,
-            tipoDieta = tipoDieta
+            bodyWeightKg = animal.pesoKg,
+            dmiKgDay = animal.consumoDMI,
+            tipoDieta = animal.tipo
         )
     }
 }

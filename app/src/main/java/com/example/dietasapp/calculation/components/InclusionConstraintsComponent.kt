@@ -1,6 +1,6 @@
 package com.example.dietasapp.calculation.components
 
-import com.example.dietasapp.domain.AnimalProfile
+import com.example.dietasapp.data.Animal
 import com.example.dietasapp.domain.Ingredient
 import org.ojalgo.optimisation.ExpressionsBasedModel
 import org.ojalgo.optimisation.Variable
@@ -22,10 +22,10 @@ class InclusionConstraintsComponent : IDietComponent {
     override fun apply(
         model: ExpressionsBasedModel,
         variables: Map<Ingredient, Variable>,
-        profile: AnimalProfile,
+        animal: Animal,
         ingredients: List<Ingredient>
     ) {
-        val dmi = profile.dmiKgDay
+        val dmi = animal.consumoDMI
 
         variables.forEach { (ingredient, variable) ->
             // Aplicar restricción de inclusión mínima
@@ -52,8 +52,7 @@ class InclusionConstraintsComponent : IDietComponent {
         }
 
         // Log resumen
-        val withConstraints = ingredients.count { it.hasCustomConstraints() }
-        println("[${getName()}] Aplicado a $withConstraints ingredientes con restricciones personalizadas")
+        logComponentApplication(animal, ingredients)
     }
 
     override fun getName(): String = "Inclusion Constraints"
@@ -71,5 +70,16 @@ class InclusionConstraintsComponent : IDietComponent {
         kg: Double
     ) {
         println("  - $ingredientName: Inclusión $type = ${String.format("%.1f", percentage)}% (${String.format("%.2f", kg)} kg)")
+    }
+
+    /**
+     * Log del componente con información del animal
+     */
+    private fun logComponentApplication(animal: Animal, ingredients: List<Ingredient>) {
+        val withConstraints = ingredients.count { it.hasCustomConstraints() }
+        println("[${getName()}] Aplicado")
+        println("  Animal: ${animal.nombre}")
+        println("  DMI: ${animal.consumoDMI} kg/día")
+        println("  Ingredientes con restricciones: $withConstraints de ${ingredients.size}")
     }
 }

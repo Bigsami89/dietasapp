@@ -1,5 +1,6 @@
 package com.example.dietasapp
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +12,7 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.dietasapp.databinding.ActivityMainBinding
+import com.example.dietasapp.SelectorEspecieActivity
 import com.google.android.material.navigation.NavigationView
 
 class MainActivity : AppCompatActivity() {
@@ -50,15 +52,21 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
+        val tipo = com.example.dietasapp.data.prefs.AppPrefs.getTipoAnimal(this)
+        if (tipo == null) {
+            startActivity(Intent(this, SelectorEspecieActivity::class.java))
+            finish()
+            return
+        }
+
         // Cambiar el título del toolbar según el destino
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            supportActionBar?.title = when (destination.id) {
-                R.id.nav_home -> getString(R.string.menu_calcular_dieta)
-                R.id.nav_inventory -> getString(R.string.menu_inventario)
-                R.id.nav_history -> getString(R.string.menu_historial)
-                R.id.nav_settings -> getString(R.string.menu_configuracion)
-                else -> getString(R.string.app_name)
+            val base = destination.label?.toString() ?: getString(R.string.app_name)
+            val especie = when (com.example.dietasapp.data.prefs.AppPrefs.getTipoAnimal(this)) {
+                com.example.dietasapp.data.prefs.AppPrefs.TIPO_MONO -> "Monogástrico"
+                else -> "Multigástrico"
             }
+            supportActionBar?.title = "$base — $especie"
         }
     }
 

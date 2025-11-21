@@ -1,208 +1,258 @@
 package com.example.dietasapp.database
 
-
+import android.content.Context
 import com.example.dietasapp.data.*
 import com.example.dietasapp.domain.*
-import android.content.Context
+import com.example.dietasapp.data.prefs.AppPrefs
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 
 /**
- * Gestor de persistencia de datos en archivos JSON
- * Maneja lectura/escritura de archivos en almacenamiento interno
+ * Gestor de persistencia en UN SOLO archivo JSON (db.json)
+ *
+ * Estructura:
+ * {
+ *   "animals":   { "monogastrico": [ ... ], "multigastrico": [ ... ] },
+ *   "insumos":   { "monogastrico": [ ... ], "multigastrico": [ ... ] },
+ *   "inventory": { "monogastrico": [ ... ], "multigastrico": [ ... ] },
+ *   "dietas":    { "monogastrico": [ ... ], "multigastrico": [ ... ] }
+ * }
+ *
+ * Se respeta la API pública previa (readAnimals/writeAnimals/...) para no
+ * modificar BaseDeDatosJSON ni Inventario.
  */
 class PersistenceManager(private val context: Context) {
 
-    private val gson: Gson = GsonBuilder()
-        .setPrettyPrinting()
-        .create()
+    private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    companion object {
+    private companion object {
+        private const val DB_FILE = "db.json"
+
+        // Claves de las secciones
+        private const val ANIMALS = "animals"
+        private const val INSUMOS = "insumos"
+        private const val INVENTORY = "inventory"
+        private const val DIETAS = "dietas"
+
+        // Archivos legacy (vía ZIP) — solo para migración si existieran
         private const val ANIMALS_FILE = "animals.json"
         private const val INSUMOS_FILE = "insumos.json"
         private const val INVENTORY_FILE = "inventory.json"
         private const val DIETAS_FILE = "dietas.json"
     }
 
-    // ============= MÉTODOS GENÉRICOS =============
+    // ========= UTILIDAD BÁSICA DE ARCHIVO ÚNICO =========
 
-    /**
-     * Lee datos de un archivo JSON
-     */
-    suspend fun <T> readData(fileName: String, typeToken: TypeToken<T>): T? = withContext(Dispatchers.IO) {
-        try {
-            val file = File(context.filesDir, fileName)
+    private fun dbFile(): File = File(context.filesDir, DB_FILE)
 
-            if (!file.exists()) {
-                println("Archivo $fileName no existe, devolviendo null")
-                return@withContext null
+    private fun readRoot(): JSONObject {
+        val f = dbFile()
+        if (!f.exists()) {
+            return JSONObject().apply {
+                put(ANIMALS, JSONObject())
+                put(INSUMOS, JSONObject())
+                put(INVENTORY, JSONObject())
+                put(DIETAS, JSONObject())
             }
+        }
+        val txt = f.readText()
+        return try { JSONObject(txt) } catch (_: JSONException) {
+            JSONObject().apply {
+                put(ANIMALS, JSONObject())
+                put(INSUMOS, JSONObject())
+                put(INVENTORY, JSONObject())
+                put(DIETAS, JSONObject())
+            }
+        }
+    }
 
-            val jsonString = file.readText()
+    private fun writeRoot(root: JSONObject) {
+        dbFile().writeText(root.toString())
+    }
+
+    private fun ensureSection(root: JSONObject, section: String): JSONObject {
+        if (!root.has(section) || root.opt(section) !is JSONObject) {
+            root.put(section, JSONObject())
+        }
+        return root.getJSONObject(section)
+    }
+
+    private fun ensureSpeciesArray(sectionObj: JSONObject, species: String): JSONArray {
+        if (!sectionObj.has(species) || sectionObj.opt(species) !is JSONArray) {
+            sectionObj.put(species, JSONArray())
+        }
+        return sectionObj.getJSONArray(species)
+    }
+
+    private fun currentSpecies(): String {
+        return AppPrefs.getTipoAnimal(context) ?: AppPrefs.TIPO_MULTI
+    }
+
+    // ========= GENÉRICOS: LEER/ESCRIBIR SECCIÓN+ESPECIE =========
+
+    private suspend fun <T> readSection(
+        section: String,
+        typeToken: TypeToken<T>
+    ): T? = withContext(Dispatchers.IO) {
+        try {
+            val root = readRoot()
+            val sec = ensureSection(root, section)
+            val arr = ensureSpeciesArray(sec, currentSpecies())
+            val jsonString = arr.toString()
             gson.fromJson<T>(jsonString, typeToken.type)
-
         } catch (e: IOException) {
-            println("Error al leer archivo $fileName: ${e.message}")
-            e.printStackTrace()
+            println("Error IO al leer sección $section: ${e.message}")
             null
         } catch (e: Exception) {
-            println("Error al parsear JSON de $fileName: ${e.message}")
-            e.printStackTrace()
+            println("Error parseando sección $section: ${e.message}")
             null
         }
     }
 
-    /**
-     * Escribe datos a un archivo JSON
-     */
-    suspend fun <T> writeData(fileName: String, data: T): Boolean = withContext(Dispatchers.IO) {
+    private suspend fun <T> writeSection(
+        section: String,
+        data: T
+    ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val file = File(context.filesDir, fileName)
+            val root = readRoot()
+            val sec = ensureSection(root, section)
             val jsonString = gson.toJson(data)
-            file.writeText(jsonString)
-
-            println("Datos guardados exitosamente en $fileName")
+            val arr = JSONArray(jsonString) // data es lista
+            sec.put(currentSpecies(), arr)
+            writeRoot(root)
             true
-
         } catch (e: IOException) {
-            println("Error al escribir archivo $fileName: ${e.message}")
-            e.printStackTrace()
+            println("Error IO al escribir sección $section: ${e.message}")
             false
         } catch (e: Exception) {
-            println("Error al serializar datos para $fileName: ${e.message}")
-            e.printStackTrace()
+            println("Error serializando sección $section: ${e.message}")
             false
         }
     }
 
-    /**
-     * Verifica si existe un archivo
-     */
+    // ========= API PÚBLICA COMPATIBLE (usada por BaseDeDatosJSON) =========
+
+    suspend fun readAnimals(): List<Animal>? =
+        readSection(ANIMALS, object : TypeToken<List<Animal>>() {})
+
+    suspend fun writeAnimals(animals: List<Animal>): Boolean =
+        writeSection(ANIMALS, animals)
+
+    suspend fun readInsumos(): List<Insumo>? =
+        readSection(INSUMOS, object : TypeToken<List<Insumo>>() {})
+
+    suspend fun writeInsumos(insumos: List<Insumo>): Boolean =
+        writeSection(INSUMOS, insumos)
+
+    suspend fun readInventory(): List<InventarioItem>? =
+        readSection(INVENTORY, object : TypeToken<List<InventarioItem>>() {})
+
+    suspend fun writeInventory(inventory: List<InventarioItem>): Boolean =
+        writeSection(INVENTORY, inventory)
+
+    suspend fun readDietas(): List<Dieta>? =
+        readSection(DIETAS, object : TypeToken<List<Dieta>>() {})
+
+    suspend fun writeDietas(dietas: List<Dieta>): Boolean =
+        writeSection(DIETAS, dietas)
+
+    // ========= UTILIDADES / COMPAT =========
+
     fun fileExists(fileName: String): Boolean {
-        val file = File(context.filesDir, fileName)
-        return file.exists()
+        // Mantener compat: cualquier chequeo apunta al archivo único
+        return dbFile().exists()
     }
 
-    /**
-     * Elimina un archivo
-     */
-    suspend fun deleteFile(fileName: String): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val file = File(context.filesDir, fileName)
-            if (file.exists()) {
-                file.delete()
-            } else {
-                true
-            }
-        } catch (e: Exception) {
-            println("Error al eliminar archivo $fileName: ${e.message}")
-            false
-        }
-    }
-
-    /**
-     * Obtiene el tamaño de un archivo en bytes
-     */
     fun getFileSize(fileName: String): Long {
-        val file = File(context.filesDir, fileName)
-        return if (file.exists()) file.length() else 0
+        val f = dbFile()
+        return if (f.exists()) f.length() else 0L
     }
 
-    // ============= MÉTODOS ESPECÍFICOS POR TIPO =============
-
-    suspend fun readAnimals(): List<Animal>? {
-        return readData(ANIMALS_FILE, object : TypeToken<List<Animal>>() {})
+    private fun deleteFile(fileName: String) {
+        // Compat: borrar el archivo único
+        val f = dbFile()
+        if (f.exists()) f.delete()
     }
-
-    suspend fun writeAnimals(animals: List<Animal>): Boolean {
-        return writeData(ANIMALS_FILE, animals)
-    }
-
-    suspend fun readInsumos(): List<Insumo>? {
-        return readData(INSUMOS_FILE, object : TypeToken<List<Insumo>>() {})
-    }
-
-    suspend fun writeInsumos(insumos: List<Insumo>): Boolean {
-        return writeData(INSUMOS_FILE, insumos)
-    }
-
-    suspend fun readInventory(): List<InventarioItem>? {
-        return readData(INVENTORY_FILE, object : TypeToken<List<InventarioItem>>() {})
-    }
-
-    suspend fun writeInventory(inventory: List<InventarioItem>): Boolean {
-        return writeData(INVENTORY_FILE, inventory)
-    }
-
-    suspend fun readDietas(): List<Dieta>? {
-        return readData(DIETAS_FILE, object : TypeToken<List<Dieta>>() {})
-    }
-
-    suspend fun writeDietas(dietas: List<Dieta>): Boolean {
-        return writeData(DIETAS_FILE, dietas)
-    }
-
-    // ============= UTILIDADES =============
 
     /**
-     * Inicializa archivos con datos por defecto si no existen
+     * Inicializa `db.json` si no existe. Si existen archivos legacy
+     * (animals.json, insumos.json, etc.), los migra a especie por defecto
+     * (multigástrico) sin sobreescribir si ya hay datos.
      */
     suspend fun initializeDefaultData() = withContext(Dispatchers.IO) {
-        if (!fileExists(ANIMALS_FILE)) {
-            writeAnimals(emptyList())
+        val root = readRoot()
+
+        // Asegurar estructura base
+        ensureSection(root, ANIMALS)
+        ensureSection(root, INSUMOS)
+        ensureSection(root, INVENTORY)
+        ensureSection(root, DIETAS)
+
+        // Crear arrays vacíos por especie si faltan
+        listOf(ANIMALS, INSUMOS, INVENTORY, DIETAS).forEach { sec ->
+            val sObj = ensureSection(root, sec)
+            ensureSpeciesArray(sObj, AppPrefs.TIPO_MONO)
+            ensureSpeciesArray(sObj, AppPrefs.TIPO_MULTI)
         }
-        if (!fileExists(INSUMOS_FILE)) {
-            writeInsumos(emptyList())
+
+        // Migración simple desde archivos legacy → especie MULTI (si hay y si destino vacío)
+        fun <T> readLegacy(file: String, token: TypeToken<T>): T? {
+            val f = File(context.filesDir, file)
+            if (!f.exists()) return null
+            return try {
+                gson.fromJson<T>(f.readText(), token.type)
+            } catch (_: Exception) { null }
         }
-        if (!fileExists(INVENTORY_FILE)) {
-            writeInventory(emptyList())
+
+        // ANIMALES
+        val animalsObj = root.getJSONObject(ANIMALS)
+        if (animalsObj.getJSONArray(AppPrefs.TIPO_MULTI).length() == 0) {
+            readLegacy(ANIMALS_FILE, object : TypeToken<List<Animal>>() {} )?.let {
+                animalsObj.put(AppPrefs.TIPO_MULTI, JSONArray(gson.toJson(it)))
+            }
         }
-        if (!fileExists(DIETAS_FILE)) {
-            writeDietas(emptyList())
+
+        // INSUMOS
+        val insumosObj = root.getJSONObject(INSUMOS)
+        if (insumosObj.getJSONArray(AppPrefs.TIPO_MULTI).length() == 0) {
+            readLegacy(INSUMOS_FILE, object : TypeToken<List<Insumo>>() {} )?.let {
+                insumosObj.put(AppPrefs.TIPO_MULTI, JSONArray(gson.toJson(it)))
+            }
         }
+
+        // INVENTARIO
+        val invObj = root.getJSONObject(INVENTORY)
+        if (invObj.getJSONArray(AppPrefs.TIPO_MULTI).length() == 0) {
+            readLegacy(INVENTORY_FILE, object : TypeToken<List<InventarioItem>>() {} )?.let {
+                invObj.put(AppPrefs.TIPO_MULTI, JSONArray(gson.toJson(it)))
+            }
+        }
+
+        // DIETAS
+        val dietasObj = root.getJSONObject(DIETAS)
+        if (dietasObj.getJSONArray(AppPrefs.TIPO_MULTI).length() == 0) {
+            readLegacy(DIETAS_FILE, object : TypeToken<List<Dieta>>() {} )?.let {
+                dietasObj.put(AppPrefs.TIPO_MULTI, JSONArray(gson.toJson(it)))
+            }
+        }
+
+        writeRoot(root)
     }
 
     /**
-     * Respalda todos los datos
-     */
-    suspend fun backupAllData(): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val backupDir = File(context.filesDir, "backup")
-            if (!backupDir.exists()) {
-                backupDir.mkdir()
-            }
-
-            val timestamp = System.currentTimeMillis()
-
-            listOf(ANIMALS_FILE, INSUMOS_FILE, INVENTORY_FILE, DIETAS_FILE).forEach { fileName ->
-                val sourceFile = File(context.filesDir, fileName)
-                if (sourceFile.exists()) {
-                    val backupFile = File(backupDir, "${timestamp}_$fileName")
-                    sourceFile.copyTo(backupFile, overwrite = true)
-                }
-            }
-
-            true
-        } catch (e: Exception) {
-            println("Error al hacer backup: ${e.message}")
-            false
-        }
-    }
-
-    /**
-     * Limpia todos los datos
+     * Limpia la base y vuelve a crear estructura vacía.
      */
     suspend fun clearAllData(): Boolean = withContext(Dispatchers.IO) {
         try {
-            deleteFile(ANIMALS_FILE)
-            deleteFile(INSUMOS_FILE)
-            deleteFile(INVENTORY_FILE)
-            deleteFile(DIETAS_FILE)
+            deleteFile(DB_FILE)
             initializeDefaultData()
             true
         } catch (e: Exception) {

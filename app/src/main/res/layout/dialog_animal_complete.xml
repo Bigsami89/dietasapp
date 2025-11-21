@@ -11,8 +11,6 @@
         android:orientation="vertical"
         android:padding="24dp">
 
-        <!-- Título -->
-
         <!-- Información Básica -->
         <TextView
             android:layout_width="match_parent"
@@ -130,8 +128,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:hint="NEm Mínimo"
-                app:suffixText="Mcal/kg">
+                android:hint="ENm Mínimo"
+                app:suffixText="Mcal/kg"
+                app:helperText="Energía Neta Mantenimiento">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etNEmMin"
@@ -145,7 +144,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="NEm Máximo"
+                android:hint="ENm Máximo"
                 app:suffixText="Mcal/kg">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -169,7 +168,8 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:hint="TDN Mínimo"
-                app:suffixText="%">
+                app:suffixText="%"
+                app:helperText="Nutrientes Dig. Totales">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etTDNMin"
@@ -215,8 +215,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:hint="CP Mínimo"
-                app:suffixText="%">
+                android:hint="PC Mínimo"
+                app:suffixText="%"
+                app:helperText="Proteína Cruda">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etCPMin"
@@ -230,7 +231,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="CP Máximo"
+                android:hint="PC Máximo"
                 app:suffixText="%">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -253,8 +254,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:hint="NDF Mínimo"
-                app:suffixText="%">
+                android:hint="FDN Mínimo"
+                app:suffixText="%"
+                app:helperText="Fibra Det. Neutra">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etNDFMin"
@@ -268,7 +270,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="NDF Máximo"
+                android:hint="FDN Máximo"
                 app:suffixText="%">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -301,7 +303,8 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:hint="Ca Mínimo"
-                app:suffixText="%">
+                app:suffixText="%"
+                app:helperText="Calcio">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etCaMin"
@@ -339,7 +342,8 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:hint="P Mínimo"
-                app:suffixText="%">
+                app:suffixText="%"
+                app:helperText="Fósforo">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etPMin"
@@ -385,8 +389,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:hint="Fat Mínimo"
-                app:suffixText="%">
+                android:hint="EE Mínimo"
+                app:suffixText="%"
+                app:helperText="Extracto Etéreo">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etFatMin"
@@ -400,7 +405,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="Fat Máximo"
+                android:hint="EE Máximo"
                 app:suffixText="%">
 
                 <com.google.android.material.textfield.TextInputEditText

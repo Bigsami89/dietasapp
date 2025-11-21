@@ -299,5 +299,21 @@
     <string name="sin_restricciones">Sin restricciones</string>
 
 
+    <string name="selector_especie_titulo">Selecciona la especie</string>
+    <string name="selector_mono">Monogástrico (ej. Cerdo)</string>
+    <string name="selector_multi">Multigástrico (ej. Vaca)</string>
+    <string name="cambiar_especie">Cambiar especie</string>
+
+
+    
+    <string name="titulo_tipo_animal">Tipo de animal</string>
+    <string name="multigastrico">Multigastrico</string>
+    <string name="monogastrico">Monogastrico</string>
+    <string name="cd_cow">Ilustración de vaca</string>
+    <string name="cd_pig">Ilustración de cerdo</string>
+
+
+    <string name="empty_insumos">Sin insumos</string>
+    <string name="empty_insumos_desc">Agrega tu primer insumo para empezar.</string>
 
 </resources>

@@ -1,5 +1,6 @@
 package com.example.dietasapp.calculation.methane
 
+import com.example.dietasapp.data.Animal
 import com.example.dietasapp.data.TipoDieta
 import com.example.dietasapp.domain.Ingredient
 import kotlin.math.exp
@@ -17,7 +18,6 @@ class MethaneCalculator {
      * Calcula la producción de metano usando múltiples ecuaciones empíricas
      * y devuelve estadísticas del conjunto (ensemble approach)
      *
-     * @param ingredient Ingrediente (no usado en ELS, pero se mantiene para compatibilidad)
      * @param dietComposition Composición de la dieta (ingrediente -> kg/día)
      * @param bodyWeightKg Peso corporal del animal (kg)
      * @param dmiKgDay Consumo de materia seca (kg/día)
@@ -25,7 +25,6 @@ class MethaneCalculator {
      * @return Resultado del cálculo con estadísticas
      */
     fun calculate(
-        ingredient: Ingredient? = null,
         dietComposition: Map<Ingredient, Double>,
         bodyWeightKg: Double,
         dmiKgDay: Double,
@@ -53,7 +52,22 @@ class MethaneCalculator {
     }
 
     /**
-     * Calcula nutrientes totales de la dieta
+     * Versión sobrecargada que acepta un Animal directamente
+     */
+    fun calculate(
+        dietComposition: Map<Ingredient, Double>,
+        animal: Animal
+    ): MethaneResult {
+        return calculate(
+            dietComposition = dietComposition,
+            bodyWeightKg = animal.pesoKg,
+            dmiKgDay = animal.consumoDMI,
+            tipoDieta = animal.tipo
+        )
+    }
+
+    /**
+     * Calcula nutrientes totales de la dieta usando constantes de Animal
      */
     private fun calculateTotalNutrients(
         dietComposition: Map<Ingredient, Double>,
@@ -61,25 +75,25 @@ class MethaneCalculator {
     ): DietNutrients {
         var totalGE = 0.0
         var totalCP = 0.0
-        var totalNDF = 0.0
+        var totalFDN = 0.0
         var totalStarch = 0.0
-        var totalFat = 0.0
+        var totalEE = 0.0
         var totalME = 0.0
-        var totalForage = 0.0
         var totalDM = 0.0
 
         dietComposition.forEach { (ingredient, kgPerDay) ->
-            val ge = ingredient.getNutrient("GE")
-            val cp = ingredient.getNutrient("CP") / 100.0 // % a fracción
-            val ndf = ingredient.getNutrient("NDF") / 100.0
-            val starch = ingredient.getNutrient("Starch") / 100.0
-            val fat = ingredient.getNutrient("Fat") / 100.0
+            // Usar las constantes de Animal para acceder a nutrientes
+            val ge = ingredient.getNutrientOrNull("GE") ?: 0.0
+            val pc = ingredient.getNutrient(Animal.PROTEINA_CRUDA) / 100.0
+            val fdn = ingredient.getNutrient(Animal.FIBRA_DETERGENTE_NEUTRA) / 100.0
+            val almidon = ingredient.getNutrientOrNull("Almidon") ?: 0.0
+            val ee = ingredient.getNutrient(Animal.EXTRACTO_ETEREO) / 100.0
 
             totalGE += ge * kgPerDay
-            totalCP += cp * kgPerDay
-            totalNDF += ndf * kgPerDay
-            totalStarch += starch * kgPerDay
-            totalFat += fat * kgPerDay
+            totalCP += pc * kgPerDay
+            totalFDN += fdn * kgPerDay
+            totalStarch += (almidon / 100.0) * kgPerDay
+            totalEE += ee * kgPerDay
             totalDM += kgPerDay
 
             // Calcular ME aproximado (GE * 0.82 como estimación simplificada)
@@ -89,14 +103,14 @@ class MethaneCalculator {
         val foragePercentage = calculateForagePercentage(dietComposition)
 
         return DietNutrients(
-            gei = totalGE,  // Mcal/day
-            mei = totalME,  // Mcal/day (aproximado)
+            gei = totalGE,
+            mei = totalME,
             dmi = dmiKgDay,
             cpKgDay = totalCP,
-            ndfKgDay = totalNDF,
+            fdnKgDay = totalFDN,
             starchKgDay = totalStarch,
-            fatKgDay = totalFat,
-            eePercent = (totalFat / totalDM) * 100.0,
+            eeKgDay = totalEE,
+            eePercent = (totalEE / totalDM) * 100.0,
             foragePercent = foragePercentage,
             gePerKg = if (dmiKgDay > 0) totalGE / dmiKgDay else 0.0
         )
@@ -104,6 +118,7 @@ class MethaneCalculator {
 
     /**
      * Calcula el porcentaje de forraje en la dieta
+     * Asume que ingredientes con FDN > 40% son forrajes
      */
     private fun calculateForagePercentage(dietComposition: Map<Ingredient, Double>): Double {
         var totalForage = 0.0
@@ -111,9 +126,8 @@ class MethaneCalculator {
 
         dietComposition.forEach { (ingredient, kgPerDay) ->
             totalDM += kgPerDay
-            // Asumimos que los ingredientes con alto NDF (>40%) son forrajes
-            val ndf = ingredient.getNutrient("NDF")
-            if (ndf > 40.0) {
+            val fdn = ingredient.getNutrient(Animal.FIBRA_DETERGENTE_NEUTRA)
+            if (fdn > 40.0) {
                 totalForage += kgPerDay
             }
         }
@@ -134,7 +148,7 @@ class MethaneCalculator {
 
         // Eq. 16-8: Escobar-Bahamondes y Beauchemin
         try {
-            val ch4 = 71.5 + 0.12 * bw + 0.10 * dmi.pow(3) - 244.8 * nutrients.fatKgDay.pow(3)
+            val ch4 = 71.5 + 0.12 * bw + 0.10 * dmi.pow(3) - 244.8 * nutrients.eeKgDay.pow(3)
             predictions.add(MethanePrediction("Escobar-Bahamondes (16-8)", ch4, "g/d"))
         } catch (e: Exception) {
             // Si falla, continuar con otras ecuaciones
@@ -143,7 +157,7 @@ class MethaneCalculator {
         // IPCC (2006, Nivel II)
         try {
             val ch4MJ = dmi * nutrients.gePerKg * 0.065
-            val ch4Grams = ch4MJ * 1000 / 55.65  // Convertir MJ a gramos (1 MJ = 1000/55.65 g CH4)
+            val ch4Grams = ch4MJ * 1000 / 55.65
             predictions.add(MethanePrediction("IPCC (2006)", ch4Grams, "g/d"))
         } catch (e: Exception) {
             // Continuar
@@ -152,7 +166,7 @@ class MethaneCalculator {
         // Ellis et al. (2009, Eq. G)
         if (nutrients.foragePercent <= 75.0 && bw in 180.0..630.0) {
             try {
-                val ch4MJ = -1.01 + 2.76 * nutrients.ndfKgDay + 0.722 * nutrients.starchKgDay
+                val ch4MJ = -1.01 + 2.76 * nutrients.fdnKgDay + 0.722 * nutrients.starchKgDay
                 val ch4Grams = ch4MJ * 1000 / 55.65
                 predictions.add(MethanePrediction("Ellis (2009, Eq. G)", ch4Grams, "g/d"))
             } catch (e: Exception) {
@@ -174,11 +188,11 @@ class MethaneCalculator {
         // Ellis et al. (2009, Eq. N)
         if (nutrients.foragePercent <= 75.0 && bw in 180.0..630.0) {
             try {
-                val starchNDFRatio = if (nutrients.ndfKgDay > 0) {
-                    nutrients.starchKgDay / nutrients.ndfKgDay
+                val starchFDNRatio = if (nutrients.fdnKgDay > 0) {
+                    nutrients.starchKgDay / nutrients.fdnKgDay
                 } else 0.0
 
-                val ch4MJ = 2.68 - 1.14 * starchNDFRatio + 0.786 * dmi
+                val ch4MJ = 2.68 - 1.14 * starchFDNRatio + 0.786 * dmi
                 val ch4Grams = ch4MJ * 1000 / 55.65
                 predictions.add(MethanePrediction("Ellis (2009, Eq. N)", ch4Grams, "g/d"))
             } catch (e: Exception) {
@@ -186,10 +200,10 @@ class MethaneCalculator {
             }
         }
 
-        // Moraes et al. (2014) - Para novillos (asumiendo)
+        // Moraes et al. (2014) - Para novillos
         if (bw in 170.0..630.0) {
             try {
-                val geiMJ = nutrients.gei * 4.184  // Convertir Mcal a MJ
+                val geiMJ = nutrients.gei * 4.184
                 val ch4Grams = (-0.221 + 0.048 * geiMJ + 0.005 * bw) * 1000 / 55.65
                 predictions.add(MethanePrediction("Moraes (2014, Novillos)", ch4Grams, "g/d"))
             } catch (e: Exception) {
@@ -214,7 +228,7 @@ class MethaneCalculator {
         // Ellis et al. (2007, Eq. 12b)
         if (bw in 200.0..660.0) {
             try {
-                val ch4MJ = 2.7 + 1.16 * dmi - 15.8 * (nutrients.fatKgDay / dmi)
+                val ch4MJ = 2.7 + 1.16 * dmi - 15.8 * (nutrients.eeKgDay / dmi)
                 val ch4Grams = ch4MJ * 1000 / 55.65
                 predictions.add(MethanePrediction("Ellis (2007, Eq. 12b)", ch4Grams, "g/d"))
             } catch (e: Exception) {
@@ -254,16 +268,16 @@ class MethaneCalculator {
 
         // Eq. 16-9: Escobar-Bahamondes y Beauchemin
         try {
-            val cpNDFRatio = if (nutrients.ndfKgDay > 0) {
-                nutrients.cpKgDay / nutrients.ndfKgDay
+            val cpFDNRatio = if (nutrients.fdnKgDay > 0) {
+                nutrients.cpKgDay / nutrients.fdnKgDay
             } else 0.0
 
-            val starchNDFRatio = if (nutrients.ndfKgDay > 0) {
-                nutrients.starchKgDay / nutrients.ndfKgDay
+            val starchFDNRatio = if (nutrients.fdnKgDay > 0) {
+                nutrients.starchKgDay / nutrients.fdnKgDay
             } else 0.0
 
-            val ch4 = -10.1 + 0.21 * bw + 0.36 * dmi.pow(2) - 69.2 * nutrients.fatKgDay +
-                    13.0 * cpNDFRatio - 4.9 * starchNDFRatio
+            val ch4 = -10.1 + 0.21 * bw + 0.36 * dmi.pow(2) - 69.2 * nutrients.eeKgDay +
+                    13.0 * cpFDNRatio - 4.9 * starchFDNRatio
 
             predictions.add(MethanePrediction("Escobar-Bahamondes (16-9)", ch4, "g/d"))
         } catch (e: Exception) {
@@ -272,7 +286,7 @@ class MethaneCalculator {
 
         // Ellis et al. (2007, Eq. 9b)
         try {
-            val meiMJ = nutrients.mei * 4.184  // Convertir Mcal a MJ
+            val meiMJ = nutrients.mei * 4.184
             val ch4Grams = (0.357 + 0.0591 * meiMJ + 0.05 * nutrients.foragePercent) * 1000 / 55.65
             predictions.add(MethanePrediction("Ellis (2007, Eq. 9b)", ch4Grams, "g/d"))
         } catch (e: Exception) {
@@ -289,7 +303,7 @@ class MethaneCalculator {
 
         // Ellis et al. (2009, Eq. G)
         try {
-            val ch4MJ = -1.01 + 2.76 * nutrients.ndfKgDay + 0.722 * nutrients.starchKgDay
+            val ch4MJ = -1.01 + 2.76 * nutrients.fdnKgDay + 0.722 * nutrients.starchKgDay
             val ch4Grams = ch4MJ * 1000 / 55.65
             predictions.add(MethanePrediction("Ellis (2009, Eq. G)", ch4Grams, "g/d"))
         } catch (e: Exception) {
@@ -349,15 +363,16 @@ class MethaneCalculator {
 
     /**
      * Nutrientes calculados de la dieta
+     * Actualizado para usar nomenclatura de Animal
      */
     private data class DietNutrients(
         val gei: Double,           // Gross Energy Intake (Mcal/d)
         val mei: Double,           // Metabolizable Energy Intake (Mcal/d)
         val dmi: Double,           // Dry Matter Intake (kg/d)
-        val cpKgDay: Double,       // Crude Protein (kg/d)
-        val ndfKgDay: Double,      // Neutral Detergent Fiber (kg/d)
-        val starchKgDay: Double,   // Starch (kg/d)
-        val fatKgDay: Double,      // Fat/Ether Extract (kg/d)
+        val cpKgDay: Double,       // Crude Protein (kg/d) - PC
+        val fdnKgDay: Double,      // Neutral Detergent Fiber (kg/d) - FDN
+        val starchKgDay: Double,   // Starch (kg/d) - Almidón
+        val eeKgDay: Double,       // Ether Extract (kg/d) - EE
         val eePercent: Double,     // Ether Extract (%)
         val foragePercent: Double, // Forage content (%)
         val gePerKg: Double        // GE per kg DM

@@ -19,10 +19,34 @@ data class Animal(
     companion object {
         private const val serialVersionUID: Long = 1L
         // Claves estándar para los requerimientos
-        const val CP = "CP"           // Proteína Cruda
-        const val NEM = "NEm"         // Energía Neta Mantenimiento
-        const val CA = "Ca"           // Calcio
-        const val P = "P"             // Fósforo
-        const val NDF = "NDF"         // Fibra Detergente Neutro
+
+
+        const val ENERGIA_METABOLIZABLE = "NE"// Energía Metabolizable MGJ/KG
+        const val ENERGIA_NETA_MANTENIMIENTO = "ENM"  // Grasa
+
+        // ============= COMPOSICIÓN NUTRICIONAL (%) =============
+        const val PROTEINA_CRUDA = "PC"  // Proteína Cruda
+        const val FIBRA_DETERGENTE_NEUTRA = "FDN"  // Fibra total
+        const val FIBRA_DETERGENTE_ACIDA = "FDA"  // Porción menos digestible de fibra
+        const val EXTRACTO_ETEREO = "EE"  // Grasa
+
+        const val CENIZAS = "Cenizas"  // Contenido mineral total
+        const val METANO_PRODUCIDO = "CH4"  // g/kg MS - Gramos de metano por kg MS
+
+        // ============= MINERALES =============
+        // Macrominerales (g/kg o según especificación)
+        const val CALCIO = "Ca"
+        const val FOSFORO = "P"
+        const val MAGNESIO = "Mg"
+        const val SODIO = "Na"
+        const val POTASIO = "K"
+        const val AZUFRE = "S"
+
+        // Microminerales (mg/kg o según especificación)
+        const val COBRE = "Cu"
+        const val ZINC = "Zn"
+        const val SELENIO = "Se"
+        const val COBALTO = "Co"
+
     }
 }

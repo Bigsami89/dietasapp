@@ -120,4 +120,16 @@
         <item name="android:windowEnterAnimation">@android:anim/slide_in_left</item>
         <item name="android:windowExitAnimation">@android:anim/slide_out_right</item>
     </style>
+
+    <style name="Theme.DietasApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">?attr/colorSurface</item>
+        <item name="android:navigationBarColor">?attr/colorSurface</item>
+        <item name="materialCardViewStyle">@style/Widget.DietasApp.Card</item>
+    </style>
+
+    <style name="Widget.DietasApp.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardUseCompatPadding">true</item>
+        <item name="cardPreventCornerOverlap">true</item>
+    </style>
+
 </resources>

@@ -28,6 +28,10 @@ data class Ingredient(
         return inclusionMin > 0.0 || inclusionMax < 100.0
     }
 
+    fun getNutrientOrNull(key: String): Double? {
+        return nutrients[key]
+    }
+
     /**
      * Valida que un porcentaje de inclusión esté dentro de los límites
      */

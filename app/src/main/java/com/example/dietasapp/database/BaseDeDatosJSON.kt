@@ -14,6 +14,13 @@ import kotlinx.coroutines.sync.withLock
  */
 class BaseDeDatosJSON(context: Context) : BaseDeDatos {
 
+
+    private val namespace: String = com.example.dietasapp.data.prefs.AppPrefs.getTipoAnimal(context)
+        ?: com.example.dietasapp.data.prefs.AppPrefs.TIPO_MULTI
+
+
+
+
     private val persistenceManager = PersistenceManager(context)
 
     // Mutex para evitar condiciones de carrera en escrituras concurrentes

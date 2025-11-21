@@ -60,7 +60,7 @@ class InsumosTabFragment : Fragment() {
             onDelete = { insumo -> confirmDelete(insumo) }
         )
 
-        binding.recyclerView.apply {
+        binding.recyclerInsumos.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@InsumosTabFragment.adapter
         }
@@ -72,7 +72,8 @@ class InsumosTabFragment : Fragment() {
                 val insumos = inventario.obtenerInsumos()
                 adapter.submitList(insumos)
 
-                binding.emptyView.visibility = if (insumos.isEmpty()) View.VISIBLE else View.GONE
+                binding.emptyStateInsumos.visibility =
+                    if (insumos.isEmpty()) View.VISIBLE else View.GONE
             } catch (e: Exception) {
                 Toast.makeText(
                     requireContext(),
@@ -250,7 +251,8 @@ class InsumosTabFragment : Fragment() {
         etInclusionMaxima.setText(insumo.inclusionMaxima.toString())
 
         // Cargar nutrientes existentes
-        loadNutrientValues(insumo,
+        loadNutrientValues(
+            insumo,
             etEnergiaBruta, etEnergiaMetabolizable, etEnergiaNetaMantenimiento,
             etProteinaCruda, etFDN, etFDA, etExtractoEtereo, etCenizas,
             etDegradabilidadRuminal, etMetanoProducido,
@@ -487,7 +489,6 @@ class InsumosTabFragment : Fragment() {
                 val exitoInsumo = inventario.guardarInsumo(insumo)
 
                 if (exitoInsumo && cantidad > 0) {
-                    // Crear item de inventario
                     val inventarioItem = InventarioItem(
                         insumo = insumo,
                         cantidadDisponibleKg = cantidad

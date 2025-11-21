@@ -92,5 +92,14 @@
                     android:text="@string/sobre_app" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCambiarEspecie"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/cambiar_especie"
+            style="@style/Widget.MaterialComponents.Button.TextButton"/>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

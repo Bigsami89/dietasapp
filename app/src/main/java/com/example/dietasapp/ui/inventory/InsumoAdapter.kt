@@ -66,13 +66,13 @@ class InsumoAdapter(
 
             // Restricciones de inclusión
             if (insumo.tieneRestriccionesPersonalizadas()) {
-                binding.tvRestricciones.text = buildString {
+                binding.chipRestricciones.text = buildString {
                     append("Inclusión: ${formatNutrient(insumo.inclusionMinima)}% - ")
                     append("${formatNutrient(insumo.inclusionMaxima)}%")
                 }
-                binding.tvRestricciones.visibility = android.view.View.VISIBLE
+                binding.chipRestricciones.visibility = android.view.View.VISIBLE
             } else {
-                binding.tvRestricciones.visibility = android.view.View.GONE
+                binding.chipRestricciones.visibility = android.view.View.GONE
             }
 
             // Icono según tipo
