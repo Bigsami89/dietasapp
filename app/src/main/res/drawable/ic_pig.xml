@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="140dp"
+    android:viewportWidth="200"
+    android:viewportHeight="140">
+    <!-- cuerpo -->
+    <path
+        android:fillColor="#FFFFC1A6"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:pathData="M20,80 C20,55 70,45 120,45 S190,55 190,80 140,110 100,110 20,105 20,80 Z"/>
+    <!-- cabeza -->
+    <path
+        android:fillColor="#FFFFC1A6"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:pathData="M150,60 l30,10 0,20 -30,10 -15,-15 z"/>
+    <!-- patas -->
+    <path android:strokeColor="#FF000000" android:strokeWidth="4" android:fillColor="#00000000"
+        android:pathData="M60,110 v20 M80,110 v20 M110,110 v20 M130,110 v20"/>
+    <!-- rabo -->
+    <path android:strokeColor="#FF000000" android:strokeWidth="3" android:fillColor="#00000000"
+        android:pathData="M190,80 q8,0 8,8 q0,8 -8,8"/>
+    <!-- hocico -->
+    <path android:fillColor="#FFFF9AA2" android:pathData="M175,80 a8,6 0 1,0 16,0 a8,6 0 1,0 -16,0"/>
+</vector>
