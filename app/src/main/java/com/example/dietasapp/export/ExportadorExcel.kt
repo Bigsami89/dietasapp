@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import com.example.dietasapp.data.prefs.AppPrefs
 import com.example.dietasapp.domain.Dieta
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -67,7 +68,11 @@ class ExportadorExcel(private val context: Context) {
             createResumenSheet(workbook, dieta, styles, logs)
             createComposicionSheet(workbook, dieta, styles, logs)
             createNutrientesSheet(workbook, dieta, styles, logs)
-            createMetanoSheet(workbook, dieta, styles, logs)
+            
+            if (AppPrefs.getTipoAnimal(context) == AppPrefs.TIPO_MULTI) {
+                createMetanoSheet(workbook, dieta, styles, logs)
+            }
+            
             createLogsSheet(workbook, styles, logs)
 
             val fileName = "$nombreArchivo.xlsx"

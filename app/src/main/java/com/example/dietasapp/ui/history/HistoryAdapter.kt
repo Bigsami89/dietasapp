@@ -5,6 +5,8 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import androidx.core.view.isVisible
+import com.example.dietasapp.data.prefs.AppPrefs
 import com.example.dietasapp.R
 import com.example.dietasapp.databinding.ItemDietaBinding
 import com.example.dietasapp.domain.Dieta
@@ -58,10 +60,15 @@ class HistoryAdapter(
             )
 
             // Metano (usar metanoProducidoGramos)
-            binding.tvMetanoTotal.text = context.getString(
-                R.string.formato_metano,
-                dieta.metanoProducidoGramos
-            )
+            val isRuminant = AppPrefs.getTipoAnimal(context) == AppPrefs.TIPO_MULTI
+            binding.tvMetanoTotal.isVisible = isRuminant
+            
+            if (isRuminant) {
+                binding.tvMetanoTotal.text = context.getString(
+                    R.string.formato_metano,
+                    dieta.metanoProducidoGramos
+                )
+            }
 
             // Número de ingredientes
             binding.tvNumIngredientes.text = context.getString(

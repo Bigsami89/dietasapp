@@ -48,5 +48,15 @@ data class Animal(
         const val SELENIO = "Se"
         const val COBALTO = "Co"
 
+        // ============= AMINOÁCIDOS (%) =============
+        const val LISINA = "Lisina"
+        const val METIONINA = "Metionina"
+        const val TREONINA = "Treonina"
+        const val VALINA = "Valina"
+        const val ISOLEUCINA = "Isoleucina"
+        const val ARGININA = "Arginina"
+        const val TRIPTOFANO = "Triptofano"
+        const val LEUCINA = "Leucina"
+
     }
 }

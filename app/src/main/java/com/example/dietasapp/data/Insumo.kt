@@ -49,6 +49,16 @@ data class Insumo(
         const val SELENIO = "Se"
         const val COBALTO = "Co"
 
+        // ============= AMINOÁCIDOS (%) =============
+        const val LISINA = "Lisina"
+        const val METIONINA = "Metionina"
+        const val TREONINA = "Treonina"
+        const val VALINA = "Valina"
+        const val ISOLEUCINA = "Isoleucina"
+        const val ARGININA = "Arginina"
+        const val TRIPTOFANO = "Triptofano"
+        const val LEUCINA = "Leucina"
+
         // ============= NUTRIENTES LEGACY (mantener compatibilidad) =============
         @Deprecated("Usar ENERGIA_BRUTA", ReplaceWith("ENERGIA_BRUTA"))
         const val GE = "GE"  // Mantenido para compatibilidad con código existente

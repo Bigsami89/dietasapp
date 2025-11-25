@@ -13,8 +13,6 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Título -->
-
         <!-- Card: Selección de Animal -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardAnimal"
@@ -279,19 +277,45 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
-                        android:layout_marginBottom="4dp"
-                        tools:text="Metano producido: 280.5 g/día" />
-
-                    <TextView
-                        android:id="@+id/tvMetanoPorKg"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
-                        tools:text="Metano por kg DMI: 23.4 g/kg" />
+                        tools:text="Metano: 250 g/día" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Card: Composición de la Dieta -->
+            <!-- Card: Análisis y Recomendaciones (NUEVO) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAnalisis"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFF3E0"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="📋 Análisis y Recomendaciones"
+                        android:textAppearance="@style/TextAppearance.Dietasapp.Headline2"
+                        android:layout_marginBottom="12dp" />
+
+                    <TextView
+                        android:id="@+id/tvAnalisis"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.Dietasapp.Body1"
+                        tools:text="La dieta no cubre los requerimientos de proteína. Se sugiere agregar Harina de Soya." />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Card: Composición -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

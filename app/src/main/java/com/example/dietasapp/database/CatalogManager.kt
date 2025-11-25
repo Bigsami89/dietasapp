@@ -7,6 +7,8 @@ import com.example.dietasapp.data.TipoDieta
 import com.example.dietasapp.data.prefs.AppPrefs
 import java.util.UUID
 
+
+
 /**
  * Gestor de catálogos base validado científicamente.
  * Fuentes: NRC 2001/2012, NASEM 2016/2021, Feedipedia, FEDNA 2019, INRA-CIRAD-AFZ
@@ -20,11 +22,13 @@ class CatalogManager(private val context: Context) {
 
     fun getAnimalsCatalog(): List<Animal> = when (currentSpecies()) {
         AppPrefs.TIPO_MONO -> getMonoAnimals()
+        AppPrefs.TIPO_AVES -> getPoultryAnimals()
         else -> getMultiAnimals()
     }
 
     fun obtenerCatalogoInsumos(): List<Insumo> = when (currentSpecies()) {
         AppPrefs.TIPO_MONO -> getMonoInsumos()
+        AppPrefs.TIPO_AVES -> getPoultryInsumos()
         else -> getMultiInsumos()
     }
 
@@ -768,5 +772,435 @@ class CatalogManager(private val context: Context) {
                 )
             )
         )
+    }
+
+    // ============================
+    //           AVES (POULTRY)
+    // ============================
+    private fun getPoultryAnimals(): List<Animal> {
+        return listOf(
+            // ================= ROSS (BROILERS) =================
+            Animal(
+                id = "ross_iniciador",
+                nombre = "Ross - Iniciador (0-10 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 0.200, // Promedio estimado
+                consumoDMI = 0.030, // Estimado
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.4,
+                    Animal.PROTEINA_CRUDA to 23.0,
+                    Animal.CALCIO to 0.95,
+                    Animal.FOSFORO to 0.50,
+                    Animal.LISINA to 1.32,
+                    Animal.METIONINA to 0.55,
+                    Animal.TREONINA to 0.88,
+                    Animal.VALINA to 1.00,
+                    Animal.ISOLEUCINA to 0.88,
+                    Animal.ARGININA to 1.40,
+                    Animal.TRIPTOFANO to 0.21,
+                    Animal.LEUCINA to 1.45
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 2.0 // Fc % MAX interpretado como FDN/Fibra Cruda aprox
+                )
+            ),
+            Animal(
+                id = "ross_crecimiento",
+                nombre = "Ross - Crecimiento (11-24 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 0.900,
+                consumoDMI = 0.090,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.8,
+                    Animal.PROTEINA_CRUDA to 21.5,
+                    Animal.CALCIO to 0.75,
+                    Animal.FOSFORO to 0.42,
+                    Animal.LISINA to 1.18,
+                    Animal.METIONINA to 0.51,
+                    Animal.TREONINA to 0.79,
+                    Animal.VALINA to 0.91,
+                    Animal.ISOLEUCINA to 0.80,
+                    Animal.ARGININA to 1.27,
+                    Animal.TRIPTOFANO to 0.19,
+                    Animal.LEUCINA to 1.30
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 3.0
+                )
+            ),
+            Animal(
+                id = "ross_finalizador1",
+                nombre = "Ross - Finalizador 1 (25-39 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 2.0,
+                consumoDMI = 0.160,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 13.0,
+                    Animal.PROTEINA_CRUDA to 19.5,
+                    Animal.CALCIO to 0.65,
+                    Animal.FOSFORO to 0.36,
+                    Animal.LISINA to 1.08,
+                    Animal.METIONINA to 0.48,
+                    Animal.TREONINA to 0.72,
+                    Animal.VALINA to 0.84,
+                    Animal.ISOLEUCINA to 0.75,
+                    Animal.ARGININA to 1.17,
+                    Animal.TRIPTOFANO to 0.17,
+                    Animal.LEUCINA to 1.19
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 4.0
+                )
+            ),
+            Animal(
+                id = "ross_finalizador2",
+                nombre = "Ross - Finalizador 2 (40-Sacrificio)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 3.0,
+                consumoDMI = 0.220,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 13.1,
+                    Animal.PROTEINA_CRUDA to 18.0,
+                    Animal.CALCIO to 0.60,
+                    Animal.FOSFORO to 0.34,
+                    Animal.LISINA to 1.02,
+                    Animal.METIONINA to 0.45,
+                    Animal.TREONINA to 0.68,
+                    Animal.VALINA to 0.80,
+                    Animal.ISOLEUCINA to 0.70,
+                    Animal.ARGININA to 1.12,
+                    Animal.TRIPTOFANO to 0.16,
+                    Animal.LEUCINA to 1.12
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 4.0
+                )
+            ),
+
+            // ================= COBB 500 (BROILERS) =================
+            Animal(
+                id = "cobb_iniciador",
+                nombre = "Cobb 500 - Iniciador (0-12 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 0.250,
+                consumoDMI = 0.035,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.13,
+                    Animal.PROTEINA_CRUDA to 22.0,
+                    Animal.CALCIO to 0.96,
+                    Animal.FOSFORO to 0.58,
+                    Animal.LISINA to 1.26,
+                    Animal.METIONINA to 0.48,
+                    Animal.TREONINA to 0.86,
+                    Animal.VALINA to 0.96,
+                    Animal.ISOLEUCINA to 0.81,
+                    Animal.ARGININA to 1.36,
+                    Animal.TRIPTOFANO to 0.21,
+                    Animal.LEUCINA to 1.39
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 2.0
+                )
+            ),
+            Animal(
+                id = "cobb_crecimiento1",
+                nombre = "Cobb 500 - Crecimiento 1 (13-28 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 1.0,
+                consumoDMI = 0.100,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.34,
+                    Animal.PROTEINA_CRUDA to 20.0,
+                    Animal.CALCIO to 0.80,
+                    Animal.FOSFORO to 0.40,
+                    Animal.LISINA to 1.16,
+                    Animal.METIONINA to 0.47,
+                    Animal.TREONINA to 0.78,
+                    Animal.VALINA to 0.88,
+                    Animal.ISOLEUCINA to 0.75,
+                    Animal.ARGININA to 1.25,
+                    Animal.TRIPTOFANO to 0.18,
+                    Animal.LEUCINA to 1.28
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 3.0
+                )
+            ),
+            Animal(
+                id = "cobb_crecimiento2",
+                nombre = "Cobb 500 - Crecimiento 2 (29-39 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 2.0,
+                consumoDMI = 0.180,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.76,
+                    Animal.PROTEINA_CRUDA to 19.0,
+                    Animal.CALCIO to 0.74,
+                    Animal.FOSFORO to 0.37,
+                    Animal.LISINA to 1.06,
+                    Animal.METIONINA to 0.44,
+                    Animal.TREONINA to 0.70,
+                    Animal.VALINA to 0.81,
+                    Animal.ISOLEUCINA to 0.69,
+                    Animal.ARGININA to 1.16,
+                    Animal.TRIPTOFANO to 0.19,
+                    Animal.LEUCINA to 1.17
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 3.0
+                )
+            ),
+            Animal(
+                id = "cobb_finalizador1",
+                nombre = "Cobb 500 - Finalizador 1 (40-49 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 3.0,
+                consumoDMI = 0.230,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.97,
+                    Animal.PROTEINA_CRUDA to 18.0,
+                    Animal.CALCIO to 0.72,
+                    Animal.FOSFORO to 0.36,
+                    Animal.LISINA to 0.96,
+                    Animal.METIONINA to 0.40,
+                    Animal.TREONINA to 0.62,
+                    Animal.VALINA to 0.74,
+                    Animal.ISOLEUCINA to 0.63,
+                    Animal.ARGININA to 1.05,
+                    Animal.TRIPTOFANO to 0.17,
+                    Animal.LEUCINA to 1.06
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 4.0
+                )
+            ),
+            Animal(
+                id = "cobb_finalizador2",
+                nombre = "Cobb 500 - Finalizador 2 (50-Sacrificio)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 3.8,
+                consumoDMI = 0.250,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 13.18,
+                    Animal.PROTEINA_CRUDA to 18.0,
+                    Animal.CALCIO to 0.68,
+                    Animal.FOSFORO to 0.34,
+                    Animal.LISINA to 0.86,
+                    Animal.METIONINA to 0.35,
+                    Animal.TREONINA to 0.56,
+                    Animal.VALINA to 0.67,
+                    Animal.ISOLEUCINA to 0.57,
+                    Animal.ARGININA to 0.95,
+                    Animal.TRIPTOFANO to 0.15,
+                    Animal.LEUCINA to 0.95
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 4.0
+                )
+            ),
+
+            // ================= HUBBARD (BROILERS) =================
+            Animal(
+                id = "hubbard_iniciador",
+                nombre = "Hubbard - Iniciador (0-10 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 0.200,
+                consumoDMI = 0.030,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.6,
+                    Animal.PROTEINA_CRUDA to 23.1,
+                    Animal.CALCIO to 0.93,
+                    Animal.FOSFORO to 0.35,
+                    Animal.LISINA to 1.34,
+                    Animal.METIONINA to 0.43,
+                    Animal.TREONINA to 0.96,
+                    Animal.VALINA to 0.94,
+                    Animal.ISOLEUCINA to 0.79,
+                    Animal.ARGININA to 1.43,
+                    Animal.TRIPTOFANO to 0.22,
+                    Animal.LEUCINA to 1.39
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 2.0
+                )
+            ),
+            Animal(
+                id = "hubbard_crecimiento",
+                nombre = "Hubbard - Crecimiento (10-22 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 0.800,
+                consumoDMI = 0.080,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.6,
+                    Animal.PROTEINA_CRUDA to 21.4,
+                    Animal.CALCIO to 0.72,
+                    Animal.FOSFORO to 0.35,
+                    Animal.LISINA to 1.08,
+                    Animal.METIONINA to 0.40,
+                    Animal.TREONINA to 0.83,
+                    Animal.VALINA to 0.85,
+                    Animal.ISOLEUCINA to 0.72,
+                    Animal.ARGININA to 1.23,
+                    Animal.TRIPTOFANO to 0.20,
+                    Animal.LEUCINA to 1.28
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 3.0
+                )
+            ),
+            Animal(
+                id = "hubbard_finalizador1",
+                nombre = "Hubbard - Finalizador 1 (22-38 días)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 1.8,
+                consumoDMI = 0.150,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 13.4,
+                    Animal.PROTEINA_CRUDA to 20.0,
+                    Animal.CALCIO to 0.70,
+                    Animal.FOSFORO to 0.37,
+                    Animal.LISINA to 0.95,
+                    Animal.METIONINA to 0.38,
+                    Animal.TREONINA to 0.74,
+                    Animal.VALINA to 0.78,
+                    Animal.ISOLEUCINA to 0.71,
+                    Animal.ARGININA to 1.13,
+                    Animal.TRIPTOFANO to 0.17,
+                    Animal.LEUCINA to 1.17
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 3.0
+                )
+            ),
+            Animal(
+                id = "hubbard_finalizador2",
+                nombre = "Hubbard - Finalizador 2 (39-Sacrificio)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 2.8,
+                consumoDMI = 0.200,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.6,
+                    Animal.PROTEINA_CRUDA to 19.2,
+                    Animal.CALCIO to 0.68,
+                    Animal.FOSFORO to 0.35,
+                    Animal.LISINA to 0.90,
+                    Animal.METIONINA to 0.37,
+                    Animal.TREONINA to 0.72,
+                    Animal.VALINA to 0.76,
+                    Animal.ISOLEUCINA to 0.69,
+                    Animal.ARGININA to 1.10,
+                    Animal.TRIPTOFANO to 0.17,
+                    Animal.LEUCINA to 1.06
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 4.0
+                )
+            ),
+
+            // ================= NICK BROWN (PONEDORAS) =================
+            Animal(
+                id = "nick_iniciador",
+                nombre = "Nick Brown - Iniciador (0-5 semanas)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 0.300,
+                consumoDMI = 0.030,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 12.35,
+                    Animal.PROTEINA_CRUDA to 20.0,
+                    Animal.CALCIO to 1.05,
+                    Animal.FOSFORO to 0.45,
+                    Animal.LISINA to 1.00,
+                    Animal.METIONINA to 0.44,
+                    Animal.TREONINA to 0.78,
+                    Animal.VALINA to 0.78,
+                    Animal.ISOLEUCINA to 0.69,
+                    Animal.ARGININA to 1.05,
+                    Animal.TRIPTOFANO to 0.19,
+                    Animal.LEUCINA to 1.39
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 2.0
+                )
+            ),
+            Animal(
+                id = "nick_crecimiento",
+                nombre = "Nick Brown - Crecimiento (6-10 semanas)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 0.800,
+                consumoDMI = 0.060,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 11.93,
+                    Animal.PROTEINA_CRUDA to 18.0,
+                    Animal.CALCIO to 1.00,
+                    Animal.FOSFORO to 0.41,
+                    Animal.LISINA to 0.86,
+                    Animal.METIONINA to 0.39,
+                    Animal.TREONINA to 0.70,
+                    Animal.VALINA to 0.67,
+                    Animal.ISOLEUCINA to 0.65,
+                    Animal.ARGININA to 0.90,
+                    Animal.TRIPTOFANO to 0.18,
+                    Animal.LEUCINA to 1.28
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 3.0
+                )
+            ),
+            Animal(
+                id = "nick_desarrollo",
+                nombre = "Nick Brown - Desarrollo (11-17 semanas)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 1.3,
+                consumoDMI = 0.080,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 11.51,
+                    Animal.PROTEINA_CRUDA to 15.5,
+                    Animal.CALCIO to 0.90,
+                    Animal.FOSFORO to 0.37,
+                    Animal.LISINA to 0.56,
+                    Animal.METIONINA to 0.26,
+                    Animal.TREONINA to 0.46,
+                    Animal.VALINA to 0.45,
+                    Animal.ISOLEUCINA to 0.43,
+                    Animal.ARGININA to 0.59,
+                    Animal.TRIPTOFANO to 0.13,
+                    Animal.LEUCINA to 1.17
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 3.0
+                )
+            ),
+            Animal(
+                id = "nick_prepuesta",
+                nombre = "Nick Brown - Prepuesta (18 sem - 1er huevo)",
+                tipo = TipoDieta.BAJO_FORRAJE,
+                pesoKg = 1.6,
+                consumoDMI = 0.090,
+                requerimientosMinimos = mapOf(
+                    Animal.ENERGIA_METABOLIZABLE to 11.40,
+                    Animal.PROTEINA_CRUDA to 11.5,
+                    Animal.CALCIO to 2.00,
+                    Animal.FOSFORO to 0.40,
+                    Animal.LISINA to 0.70,
+                    Animal.METIONINA to 0.35,
+                    Animal.TREONINA to 0.49,
+                    Animal.VALINA to 0.62,
+                    Animal.ISOLEUCINA to 0.56,
+                    Animal.ARGININA to 0.73,
+                    Animal.TRIPTOFANO to 0.15,
+                    Animal.LEUCINA to 1.06
+                ),
+                requerimientosMaximos = mapOf(
+                    Animal.FIBRA_DETERGENTE_NEUTRA to 4.0
+                )
+            )
+        )
+    }
+
+    private fun getPoultryInsumos(): List<Insumo> {
+        // Reutilizamos los insumos de monogástricos (cerdos) como base,
+        // ya que comparten ingredientes como maíz y soya.
+        // Idealmente, se deberían ajustar los valores nutricionales específicos para aves.
+        return getMonoInsumos()
     }
 }

@@ -8,6 +8,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.core.view.isVisible
+import com.example.dietasapp.data.prefs.AppPrefs
 import com.example.dietasapp.R
 import com.example.dietasapp.data.Insumo
 import com.example.dietasapp.data.InventarioItem
@@ -129,6 +131,12 @@ class InsumosTabFragment : Fragment() {
         val etDegradabilidadRuminal = dialogView.findViewById<TextInputEditText>(R.id.etDegradabilidadRuminal)
         val etMetanoProducido = dialogView.findViewById<TextInputEditText>(R.id.etMetanoProducido)
 
+        // Ocultar metano si no es rumiante
+        if (AppPrefs.getTipoAnimal(requireContext()) != AppPrefs.TIPO_MULTI) {
+            etMetanoProducido.isVisible = false
+            (etMetanoProducido.parent.parent as? View)?.isVisible = false // Try to hide TextInputLayout
+        }
+
         // Referencias a Macrominerales
         val etCalcio = dialogView.findViewById<TextInputEditText>(R.id.etCalcio)
         val etFosforo = dialogView.findViewById<TextInputEditText>(R.id.etFosforo)
@@ -228,6 +236,12 @@ class InsumosTabFragment : Fragment() {
         val etCenizas = dialogView.findViewById<TextInputEditText>(R.id.etCenizas)
         val etDegradabilidadRuminal = dialogView.findViewById<TextInputEditText>(R.id.etDegradabilidadRuminal)
         val etMetanoProducido = dialogView.findViewById<TextInputEditText>(R.id.etMetanoProducido)
+
+        // Ocultar metano si no es rumiante
+        if (AppPrefs.getTipoAnimal(requireContext()) != AppPrefs.TIPO_MULTI) {
+            etMetanoProducido.isVisible = false
+            (etMetanoProducido.parent.parent as? View)?.isVisible = false // Try to hide TextInputLayout
+        }
 
         // Macrominerales
         val etCalcio = dialogView.findViewById<TextInputEditText>(R.id.etCalcio)

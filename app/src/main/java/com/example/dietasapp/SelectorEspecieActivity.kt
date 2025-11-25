@@ -32,6 +32,11 @@ class SelectorEspecieActivity : AppCompatActivity() {
             AppPrefs.setTipoAnimal(this, AppPrefs.TIPO_MONO)
             goHome()
         }
+
+        binding.cardAves.setOnClickListener {
+            AppPrefs.setTipoAnimal(this, AppPrefs.TIPO_AVES)
+            goHome()
+        }
     }
 
     private fun goHome() {

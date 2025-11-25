@@ -11,6 +11,7 @@ object AppPrefs {
     const val KEY_TIPO_ANIMAL = "tipo_animal_seleccionado"
     const val TIPO_MULTI = "multigastrico"
     const val TIPO_MONO = "monogastrico"
+    const val TIPO_AVES = "aves"
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(APP_PREFS, Context.MODE_PRIVATE)

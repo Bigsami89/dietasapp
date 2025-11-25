@@ -42,13 +42,15 @@ class DietAPI {
      * Calcula la dieta óptima para un animal con los ingredientes disponibles
      *
      * @param animal Animal con sus requerimientos nutricionales
-     * @param ingredientes Lista de insumos disponiblesNE
+     * @param ingredientes Lista de insumos disponibles
+     * @param allInsumos Lista completa de insumos (para recomendaciones)
      * @param optimizationMode Modo de optimización (COSTO o METANO)
      * @return Dieta óptima o dieta de error si no es factible
      */
     fun calculateOptimalDiet(
         animal: Animal,
         ingredientes: List<Insumo>,
+        allInsumos: List<Insumo> = emptyList(),
         optimizationMode: OptimizationMode = OptimizationMode.COST
     ): Dieta {
 
@@ -70,7 +72,7 @@ class DietAPI {
 
         // 4. Verificar si la optimización fue exitosa
         if (!dietResult.isFeasible()) {
-            val diag = diagnoseInfeasibility(animal, ingredientes)
+            val diag = diagnoseInfeasibility(animal, ingredientes, allInsumos)
             logE("❌ Optimización no factible. Diagnóstico:")
             diag.lines().forEach { logE("   $it") }
             return createErrorDiet(animal, dietResult, diag)
@@ -133,7 +135,7 @@ class DietAPI {
         val dietResult = optimizer.optimize(animal, ingredients)
 
         if (!dietResult.isFeasible()) {
-            val diag = diagnoseInfeasibility(animal, ingredientes)
+            val diag = diagnoseInfeasibility(animal, ingredientes, emptyList())
             logE("❌ Optimización no factible. Diagnóstico:")
             diag.lines().forEach { logE("   $it") }
             return createErrorDiet(animal, dietResult, diag)
@@ -291,10 +293,12 @@ class DietAPI {
      * - Consistencia de requerimientos vs disponibilidad
      * - Datos faltantes en nutrientes críticos
      * - Precios anómalos
+     * - RECOMENDACIONES DE INSUMOS (Gap Analysis)
      */
     private fun diagnoseInfeasibility(
         animal: Animal,
-        insumos: List<Insumo>
+        insumos: List<Insumo>,
+        allInsumos: List<Insumo>
     ): String = buildString {
         val dmi = max(0.0, animal.consumoDMI)
 
@@ -344,6 +348,30 @@ class DietAPI {
             }
         }
         appendLine()
+
+        // 3b. RECOMENDACIONES (Gap Analysis)
+        if (problemasDetectados > 0 && allInsumos.isNotEmpty()) {
+             appendLine("=== RECOMENDACIONES DE INSUMOS ===")
+             animal.requerimientosMinimos.forEach { (k, minReq) ->
+                 val maxD = maxDensity(k)
+                 if (maxD != null && minReq > maxD) {
+                     // Encontramos un déficit. Buscar en el catálogo completo.
+                     val topInsumos = allInsumos
+                        .filter { it.nutrientes[k] != null }
+                        .sortedByDescending { it.nutrientes[k] }
+                        .take(3)
+                     
+                     if (topInsumos.isNotEmpty()) {
+                         appendLine("💡 Para mejorar '$k' (req: ${"%.2f".format(minReq)}), considera agregar:")
+                         topInsumos.forEach { insumo ->
+                             val valNut = insumo.nutrientes[k] ?: 0.0
+                             appendLine("   • ${insumo.nombre} (${"%.2f".format(valNut)})")
+                         }
+                         appendLine()
+                     }
+                 }
+             }
+        }
 
         // 4. Verificar requerimientos máximos
         appendLine("=== REQUERIMIENTOS MÁXIMOS ===")

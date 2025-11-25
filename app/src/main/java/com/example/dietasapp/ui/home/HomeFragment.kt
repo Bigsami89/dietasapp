@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -205,9 +206,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun calcularDieta() {
-
-
-
         // Validaciones
         val animal = animalSeleccionado
         if (animal == null) {
@@ -229,88 +227,75 @@ class HomeFragment : Fragment() {
             return
         }
 
-        // Determinar modo de optimización
-        val modo = if (binding.rbMinimizarCosto.isChecked) {
-            OptimizationMode.COST
-        } else {
+        // Obtener modo de optimización
+        val modo = if (binding.rbMinimizarMetano.isChecked) {
             OptimizationMode.METHANE
+        } else {
+            OptimizationMode.COST
         }
 
-        // Calcular dieta
+        // Mostrar loading
+        binding.layoutCalculando.visibility = View.VISIBLE
+        binding.layoutResultado.visibility = View.GONE
+
+        // Calcular en background
         lifecycleScope.launch {
             try {
-                // Mostrar loading
-                binding.layoutCalculando.visibility = View.VISIBLE
-                binding.btnCalcular.isEnabled = false
-                binding.layoutResultado.visibility = View.GONE
-
-                // Calcular en background
                 val dieta = withContext(Dispatchers.IO) {
                     dietAPI.calculateOptimalDiet(
                         animal = animal,
                         ingredientes = ingredientesSeleccionados,
+                        allInsumos = insumos, // Pasar catálogo completo para recomendaciones
                         optimizationMode = modo
                     )
                 }
 
-                // Verificar si la dieta es válida
-                if (dieta.composicion.isEmpty()) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.error_calcular_dieta),
-                        Toast.LENGTH_LONG
-                    ).show()
-                    return@launch
-                }
-
-                // Guardar y mostrar resultado
                 dietaActual = dieta
                 mostrarResultado(dieta)
 
             } catch (e: Exception) {
+                binding.layoutCalculando.visibility = View.GONE
                 Toast.makeText(
                     requireContext(),
-                    "${getString(R.string.error_calcular_dieta)}: ${e.message}",
+                    "Error al calcular dieta: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
-                e.printStackTrace()
-            } finally {
-                binding.layoutCalculando.visibility = View.GONE
-                binding.btnCalcular.isEnabled = true
             }
         }
     }
 
     private fun mostrarResultado(dieta: Dieta) {
+        // Ocultar loading
+        binding.layoutCalculando.visibility = View.GONE
         binding.layoutResultado.visibility = View.VISIBLE
 
-        // Resumen económico
-        binding.tvCostoTotal.text = getString(
-            R.string.costo_total,
-            String.format("%.2f", dieta.costoTotal)
-        )
-        binding.tvCostoPorKg.text = getString(
-            R.string.costo_por_kg,
-            String.format("%.4f", dieta.costoPorKgMS())
-        )
+        // Mostrar costos
+        binding.tvCostoTotal.text = "Costo total: ${"%.2f".format(dieta.costoTotal)}/día"
+        binding.tvCostoPorKg.text = "Costo por kg MS: ${"%.2f".format(dieta.costoPorKgMS())}/kg"
 
-        // Impacto ambiental
-        binding.tvMetano.text = getString(
-            R.string.metano_producido,
-            String.format("%.2f", dieta.metanoProducidoGramos)
-        )
-        binding.tvMetanoPorKg.text = getString(
-            R.string.metano_por_kg_dmi,
-            String.format("%.2f", dieta.metanoPorKgDMI())
-        )
+        // Mostrar metano solo si se produce (rumiantes)
+        val produceMetano = dieta.metanoProducidoGramos > 0.0
+        
+        binding.tvMetano.isVisible = produceMetano
+        if (produceMetano) {
+            binding.tvMetano.text = "Metano: ${"%.2f".format(dieta.metanoProducidoGramos)} g/día"
+        }
 
-        // Composición
+        // Análisis y Recomendaciones
+        if (dieta.observaciones.isNotBlank()) {
+            binding.cardAnalisis.isVisible = true
+            binding.tvAnalisis.text = dieta.observaciones
+        } else {
+            binding.cardAnalisis.isVisible = false
+        }
+
+        // Mostrar composición
         val totalKg = dieta.composicion.values.sum()
-        val items = dieta.composicion.map { (nombre, kg) ->
+        val items = dieta.composicion.map { (nombre, cantidad) ->
             ComposicionItem(
                 nombre = nombre,
-                cantidad = kg,
-                porcentaje = (kg / totalKg) * 100.0,
+                cantidad = cantidad,
+                porcentaje = (cantidad / totalKg) * 100.0,
                 costo = obtenerCostoIngrediente(nombre)
             )
         }.sortedByDescending { it.porcentaje }

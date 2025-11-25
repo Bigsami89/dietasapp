@@ -7,6 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.core.view.isVisible
+import com.example.dietasapp.data.prefs.AppPrefs
 import com.example.dietasapp.R
 import com.example.dietasapp.databinding.DialogDietaDetalleBinding
 import com.example.dietasapp.domain.Dieta
@@ -80,7 +82,11 @@ class DietaDetalleDialog : DialogFragment() {
         binding.tvCostoTotal.text = getString(R.string.formato_costo_total, dieta.costoTotal)
 
         // Usar metanoProducidoGramos en lugar de emisionesMetano
-        binding.tvMetanoTotal.text = getString(R.string.formato_metano, dieta.metanoProducidoGramos)
+        val isRuminant = AppPrefs.getTipoAnimal(requireContext()) == AppPrefs.TIPO_MULTI
+        binding.tvMetanoTotal.isVisible = isRuminant
+        if (isRuminant) {
+            binding.tvMetanoTotal.text = getString(R.string.formato_metano, dieta.metanoProducidoGramos)
+        }
 
         // Composición de la dieta (kg/día, %, costo proporcional)
         val totalKg = dieta.composicion.values.sum().coerceAtLeast(0.0)
